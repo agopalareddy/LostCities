@@ -2,6 +2,9 @@ import java.util.*;
 
 public class LostCities {
     public static void main(String[] args) {
+        // Force standard output to auto-flush so that piped Node.js streams receive chunks in real-time
+        System.setOut(new java.io.PrintStream(System.out, true));
+
         while (true) {
             // GameManager gm = new GameManager(askAiHuman(1), askAiHuman(2));
             GameManager gm = new GameManager("human", "ai");

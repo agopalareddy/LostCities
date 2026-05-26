@@ -1,0 +1,514 @@
+/* Lost Cities Web Client Premium Styling System */
+:root {
+  --primary-glow: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  
+  --bg-color: #080a14;
+  --card-bg: rgba(18, 24, 48, 0.5);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  
+  /* Expedition Colors */
+  --exp-yellow: #f59e0b;
+  --exp-blue: #3b82f6;
+  --exp-white: #f1f5f9;
+  --exp-green: #10b981;
+  --exp-red: #ef4444;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+  position: relative;
+  padding: 2rem 0;
+}
+
+.glass-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: 
+    radial-gradient(circle at 5% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 95% 85%, rgba(59, 130, 246, 0.12) 0%, transparent 45%);
+}
+
+.app-container {
+  width: 100%;
+  max-width: 1350px;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  z-index: 2;
+}
+
+header {
+  text-align: center;
+}
+
+.logo {
+  font-size: 3.2rem;
+  font-weight: 800;
+  letter-spacing: -2px;
+  background: linear-gradient(to right, #f8fafc, #64748b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.logo span {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.tagline {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-top: 0.3rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Board Layout Grid */
+.game-board-layout {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 2rem;
+}
+
+.board-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: rgba(10, 13, 26, 0.7);
+  border-radius: 28px;
+  border: 1px solid var(--card-border);
+  padding: 1.5rem;
+}
+
+.sidebar-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Cards & Generic Panels */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+}
+
+.card h3, .expeditions-row h3, .discard-piles-wrapper h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.4rem;
+}
+
+/* Expeditions rows */
+.expeditions-row {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+.colors-grid, .discard-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+/* Colored Piles */
+.col-pile {
+  min-height: 120px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  gap: 6px;
+  position: relative;
+}
+
+/* Solitaire stack overlap for placed expeditions */
+.colors-grid .col-pile {
+  min-height: 180px;
+  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.colors-grid .col-pile .game-card {
+  margin-top: -80px;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.5);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.colors-grid .col-pile .game-card:first-child {
+  margin-top: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.colors-grid .col-pile .game-card:hover {
+  transform: translateY(-12px);
+  z-index: 100;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+}
+
+.col-pile.yellow { border-color: rgba(245, 158, 11, 0.2); }
+.col-pile.blue { border-color: rgba(59, 130, 246, 0.2); }
+.col-pile.white { border-color: rgba(241, 245, 249, 0.2); }
+.col-pile.green { border-color: rgba(16, 185, 129, 0.2); }
+.col-pile.red { border-color: rgba(239, 68, 68, 0.2); }
+
+.empty-slot-placeholder {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 2rem;
+  font-weight: 800;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Central Board (Draw pile & Discards) */
+.central-board {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: 1.5rem;
+  align-items: center;
+  background: rgba(255,255,255,0.01);
+  padding: 1rem;
+  border-radius: 18px;
+}
+
+.draw-pile-container {
+  display: flex;
+  justify-content: center;
+}
+
+.card-back {
+  width: 90px;
+  height: 130px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #334155;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.card-back.draw-deck {
+  border-color: #f59e0b;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+.card-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.deck-count {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #f59e0b;
+}
+
+/* Game Playing Cards UI */
+.game-card {
+  width: 76px;
+  height: 108px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.game-card:hover {
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: 0 12px 20px rgba(0,0,0,0.5);
+}
+
+.game-card.selected {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 15px #f59e0b !important;
+  transform: translateY(-10px) scale(1.08);
+}
+
+/* Card Themes */
+.game-card.yellow {
+  background: linear-gradient(135deg, #78350f 0%, #451a03 100%);
+  color: var(--exp-yellow);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+.game-card.blue {
+  background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+  color: var(--exp-blue);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+.game-card.white {
+  background: linear-gradient(135deg, #334155 0%, #0f172a 100%);
+  color: var(--exp-white);
+  border-color: rgba(241, 245, 249, 0.4);
+}
+.game-card.green {
+  background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+  color: var(--exp-green);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+.game-card.red {
+  background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+  color: var(--exp-red);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.card-corner {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.card-center {
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-align: center;
+  align-self: center;
+}
+
+/* Control & Actions Panel */
+.control-card {
+  border-left: 4px solid #f59e0b;
+}
+
+.action-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.pulse-indicator {
+  width: 10px;
+  height: 10px;
+  background-color: #f59e0b;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #f59e0b;
+  animation: pulse 1.5s infinite;
+  align-self: flex-start;
+}
+
+#action-instruction {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.choice-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Hand Section */
+.hand-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 0;
+  min-height: 130px;
+}
+
+.hand-grid::-webkit-scrollbar {
+  height: 6px;
+}
+.hand-grid::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+}
+
+/* Buttons */
+.btn {
+  padding: 0.7rem 1.4rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--primary-glow);
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.btn-color-yellow { border-color: var(--exp-yellow); color: var(--exp-yellow); }
+.btn-color-blue { border-color: var(--exp-blue); color: var(--exp-blue); }
+.btn-color-white { border-color: var(--exp-white); color: var(--exp-white); }
+.btn-color-green { border-color: var(--exp-green); color: var(--exp-green); }
+.btn-color-red { border-color: var(--exp-red); color: var(--exp-red); }
+
+/* Draw-step unified panel divider */
+.draw-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 2px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.draw-divider::before,
+.draw-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Top-card value hint inside discard color buttons */
+.discard-top-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+/* Logs Panel */
+.terminal-card pre {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1rem;
+  border-radius: 12px;
+  height: 180px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #a855f7;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(4, 5, 10, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  padding: 3rem;
+  border-radius: 30px;
+  text-align: center;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.7);
+  max-width: 460px;
+  width: 90%;
+}
+
+.modal-card h2 {
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.winner-announcement {
+  color: #e2e8f0;
+  font-size: 1.15rem;
+  margin-bottom: 2rem;
+  font-weight: 600;
+}
+
+/* Utility state */
+.hidden { display: none !important; }
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+@media (max-width: 1000px) {
+  .game-board-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inactive hand states to guide sequence flow */
+.inactive-hand {
+  opacity: 0.55;
+  pointer-events: none;
+  filter: grayscale(35%);
+  transition: all 0.3s ease;
+}
+.inactive-hand .game-card {
+  cursor: not-allowed !important;
+}

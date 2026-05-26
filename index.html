@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost Cities — Expedition Card Game</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="app-container">
+        <header>
+            <div class="logo">LOST<span>CITIES</span></div>
+            <p class="tagline">Java Game Engine &amp; Expedition Visualizer</p>
+        </header>
+
+        <main class="game-board-layout">
+            <!-- Left Side: Board & Collections -->
+            <div class="board-area">
+                <!-- Opponent Placed Expeditions -->
+                <div class="expeditions-row opponent">
+                    <h3>Opponent's Placed Expeditions (Player 2)</h3>
+                    <div class="colors-grid" id="opponent-placed">
+                        <div class="col-pile yellow" data-color="Yellow"></div>
+                        <div class="col-pile blue" data-color="Blue"></div>
+                        <div class="col-pile white" data-color="White"></div>
+                        <div class="col-pile green" data-color="Green"></div>
+                        <div class="col-pile red" data-color="Red"></div>
+                    </div>
+                </div>
+
+                <!-- Central Discard Piles & Draw Pile -->
+                <div class="central-board">
+                    <div class="draw-pile-container">
+                        <div class="card-back draw-deck">
+                            <span class="card-title">DECK</span>
+                            <span id="deck-size" class="deck-count">44</span>
+                        </div>
+                    </div>
+
+                    <div class="discard-piles-wrapper">
+                        <h3>Discard Piles</h3>
+                        <div class="discard-grid" id="discard-piles">
+                            <div class="col-pile yellow" data-color="Yellow" data-code="y"></div>
+                            <div class="col-pile blue" data-color="Blue" data-code="b"></div>
+                            <div class="col-pile white" data-color="White" data-code="w"></div>
+                            <div class="col-pile green" data-color="Green" data-code="g"></div>
+                            <div class="col-pile red" data-color="Red" data-code="r"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Placed Expeditions -->
+                <div class="expeditions-row player">
+                    <h3>Your Placed Expeditions (Player 1)</h3>
+                    <div class="colors-grid" id="player-placed">
+                        <div class="col-pile yellow" data-color="Yellow"></div>
+                        <div class="col-pile blue" data-color="Blue"></div>
+                        <div class="col-pile white" data-color="White"></div>
+                        <div class="col-pile green" data-color="Green"></div>
+                        <div class="col-pile red" data-color="Red"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Control Panel, Actions & Hand -->
+            <div class="sidebar-area">
+                <!-- Action / Question Panel -->
+                <div class="card control-card">
+                    <h3 id="action-heading">Game Status</h3>
+                    <div id="action-box" class="action-box">
+                        <div class="pulse-indicator"></div>
+                        <p id="action-instruction">Connecting to Lost Cities JVM...</p>
+                        
+                        <!-- Dynamic Button Choices will appear here -->
+                        <div id="choice-buttons" class="choice-buttons"></div>
+                    </div>
+                </div>
+
+                <!-- Player Hand -->
+                <div class="card hand-card">
+                    <h3>Your Hand (Select a Card)</h3>
+                    <div class="hand-grid" id="player-hand">
+                        <!-- Cards will render here -->
+                    </div>
+                </div>
+
+                <!-- Console Terminal Logs -->
+                <div class="card terminal-card">
+                    <h3>Engine CLI Output</h3>
+                    <pre id="cli-logs">Initializing game thread...</pre>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2>Match Completed!</h2>
+            <p id="winner-text" class="winner-announcement">Calculating final expedition scores...</p>
+            <div class="scores-display" id="scores-display" style="margin-bottom: 2rem; background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: #10b981;">Your Score: <span id="p1-score-val">0</span> pts</div>
+                <div style="font-size: 1.25rem; font-weight: 700; color: #ef4444;">AI Score: <span id="p2-score-val">0</span> pts</div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-restart" class="btn btn-primary">Start Expedition Again</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO client script -->
+    <script src="/lost-cities/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io({
+            path: '/lost-cities/socket.io'
+        });
+
+        let gameState = {
+            currentTurn: 1,
+            playerHand: [],
+            p1Placed: {},
+            p2Placed: {},
+            discards: {},
+            drawPileSize: 44,
+            prompt: null,
+            options: [],
+            isGameOver: false,
+            winnerText: null
+        };
+
+        let selectedHandCardIdx = null;
+        let selectedAction = null; // 'p' (Place) or 'd' (Discard)
+
+        // Start lost cities engine
+        socket.emit('start-game');
+
+        const colorsMap = {
+            'Y': 'Yellow',
+            'B': 'Blue',
+            'W': 'White',
+            'G': 'Green',
+            'R': 'Red'
+        };
+
+        const createCardHTML = (card, index = null) => {
+            const cardEl = document.createElement('div');
+            const colorClass = colorsMap[card.color]?.toLowerCase() || 'yellow';
+            cardEl.className = `game-card ${colorClass}`;
+            
+            if (index !== null) {
+                cardEl.dataset.index = index;
+                cardEl.addEventListener('click', () => {
+                    if (gameState.prompt !== 'PICK_CARD' && gameState.prompt !== 'DISCARD_OR_PLACE') {
+                        // Ignore selections if it's not time to pick a card or choose action
+                        return;
+                    }
+                    document.querySelectorAll('#player-hand .game-card').forEach(c => c.classList.remove('selected'));
+                    cardEl.classList.add('selected');
+                    selectedHandCardIdx = index;
+                    
+                    if (gameState.prompt === 'PICK_CARD') {
+                        handleHandSelection(card, index);
+                    } else if (gameState.prompt === 'DISCARD_OR_PLACE') {
+                        renderActionPanel(gameState);
+                    }
+                });
+            }
+
+            // Draw Value
+            const valueDisplay = card.val === 0 ? '★' : card.val;
+            cardEl.innerHTML = `
+                <div class="card-corner top-left">${valueDisplay}</div>
+                <div class="card-center">${card.val === 0 ? 'Multi' : valueDisplay}</div>
+                <div class="card-corner bottom-right">${valueDisplay}</div>
+            `;
+            return cardEl;
+        };
+
+        // Render card piles (Yellow, Blue, White, etc.)
+        const renderPile = (pileEl, cardList) => {
+            pileEl.innerHTML = '';
+            if (!cardList || cardList.length === 0) {
+                const emptySlot = document.createElement('div');
+                emptySlot.className = 'empty-slot-placeholder';
+                emptySlot.textContent = pileEl.dataset.color.charAt(0);
+                pileEl.appendChild(emptySlot);
+                return;
+            }
+            cardList.forEach(card => {
+                const cardEl = createCardHTML(card);
+                pileEl.appendChild(cardEl);
+            });
+        };
+
+        const renderHand = (handList) => {
+            const handGrid = document.getElementById('player-hand');
+            handGrid.innerHTML = '';
+            if (gameState.prompt !== 'PICK_CARD' && gameState.prompt !== 'DISCARD_OR_PLACE') {
+                handGrid.classList.add('inactive-hand');
+            } else {
+                handGrid.classList.remove('inactive-hand');
+            }
+            
+            if (handList.length === 0) {
+                handGrid.innerHTML = '<p class="empty-info">Drawing hand...</p>';
+                return;
+            }
+            handList.forEach((card, idx) => {
+                const cardEl = createCardHTML(card, idx);
+                if (selectedHandCardIdx === idx) {
+                    cardEl.classList.add('selected');
+                }
+                handGrid.appendChild(cardEl);
+            });
+        };
+
+        // Hand Selection Action Trigger
+        const handleHandSelection = (card, index) => {
+            if (gameState.prompt === 'PICK_CARD') {
+                socket.emit('input', index.toString());
+            }
+        };
+
+        // Handle Active Actions Panel
+        const renderActionPanel = (state) => {
+            const heading = document.getElementById('action-heading');
+            const instruction = document.getElementById('action-instruction');
+            const buttonsContainer = document.getElementById('choice-buttons');
+            
+            buttonsContainer.innerHTML = '';
+
+            if (state.isGameOver) {
+                heading.textContent = 'Match Complete';
+                
+                let winnerAnnouncement = state.winnerText || '';
+                if (winnerAnnouncement.includes('Player 1 won')) {
+                    winnerAnnouncement = '🏆 Congratulations! You defeated the AI!';
+                } else if (winnerAnnouncement.includes('Player 2 won')) {
+                    winnerAnnouncement = '🤖 The AI won the match. Better luck next expedition!';
+                }
+
+                instruction.textContent = winnerAnnouncement || 'The match has finished!';
+                document.getElementById('winner-text').textContent = winnerAnnouncement || 'Scores calculated successfully.';
+                document.getElementById('p1-score-val').textContent = state.p1Score !== undefined ? state.p1Score : '0';
+                document.getElementById('p2-score-val').textContent = state.p2Score !== undefined ? state.p2Score : '0';
+                document.getElementById('game-over-modal').classList.remove('hidden');
+                return;
+            }
+
+            if (!state.prompt) {
+                heading.textContent = 'Opponent Thinking';
+                instruction.textContent = 'AI is executing its turn in the JVM...';
+                return;
+            }
+
+            heading.textContent = 'Action Required';
+
+            if (state.prompt === 'DISCARD_OR_PLACE') {
+                if (selectedHandCardIdx !== null && selectedAction !== null) {
+                    const card = state.playerHand[selectedHandCardIdx];
+                    const cardName = `${colorsMap[card.color]} ${card.val === 0 ? 'Multi' : card.val}`;
+                    const actionName = selectedAction === 'p' ? 'Place on Expedition' : 'Discard to Trash';
+                    
+                    heading.textContent = 'Confirm Play';
+                    instruction.innerHTML = `You have selected:<br><br>Card: <strong style="color: #f59e0b;">${cardName}</strong><br>Action: <strong style="color: #10b981;">${actionName}</strong><br><br>Ready to commit this expedition step?`;
+                    
+                    const btnConfirm = document.createElement('button');
+                    btnConfirm.className = 'btn btn-primary';
+                    btnConfirm.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    btnConfirm.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.4)';
+                    btnConfirm.textContent = 'Confirm Play';
+                    btnConfirm.addEventListener('click', () => {
+                        const act = selectedAction;
+                        selectedAction = null;
+                        socket.emit('input', act);
+                    });
+
+                    const btnCancel = document.createElement('button');
+                    btnCancel.className = 'btn btn-secondary';
+                    btnCancel.textContent = 'Cancel';
+                    btnCancel.addEventListener('click', () => {
+                        selectedAction = null;
+                        selectedHandCardIdx = null;
+                        document.querySelectorAll('#player-hand .game-card').forEach(c => c.classList.remove('selected'));
+                        renderActionPanel(state);
+                    });
+
+                    buttonsContainer.appendChild(btnConfirm);
+                    buttonsContainer.appendChild(btnCancel);
+                } else {
+                    instruction.textContent = 'Choose to either Discard card in trash pile, or Place on Expedition line:';
+                    
+                    const btnPlace = document.createElement('button');
+                    btnPlace.className = 'btn btn-primary';
+                    if (selectedAction === 'p') btnPlace.style.boxShadow = '0 0 12px #f59e0b';
+                    btnPlace.textContent = 'Place Card';
+                    btnPlace.addEventListener('click', () => {
+                        selectedAction = 'p';
+                        renderActionPanel(state);
+                    });
+
+                    const btnDiscard = document.createElement('button');
+                    btnDiscard.className = 'btn btn-secondary';
+                    if (selectedAction === 'd') btnDiscard.style.borderColor = '#f59e0b';
+                    btnDiscard.textContent = 'Discard Card';
+                    btnDiscard.addEventListener('click', () => {
+                        selectedAction = 'd';
+                        renderActionPanel(state);
+                    });
+
+                    buttonsContainer.appendChild(btnPlace);
+                    buttonsContainer.appendChild(btnDiscard);
+
+                    if (selectedAction !== null && selectedHandCardIdx === null) {
+                        const actionName = selectedAction === 'p' ? 'Place' : 'Discard';
+                        instruction.innerHTML = `You chose to <strong>${actionName}</strong>.<br><br><span style="color: #94a3b8; font-size: 0.9rem; font-style: italic;">👉 Now click on a card in your hand below to confirm.</span>`;
+                    } else if (selectedAction === null && selectedHandCardIdx !== null) {
+                        const card = state.playerHand[selectedHandCardIdx];
+                        const cardName = `${colorsMap[card.color]} ${card.val === 0 ? 'Multi' : card.val}`;
+                        instruction.innerHTML = `Selected card: <strong>${cardName}</strong>.<br><br><span style="color: #94a3b8; font-size: 0.9rem; font-style: italic;">👉 Now click "Place Card" or "Discard Card" to confirm.</span>`;
+                    }
+                }
+            } else if (state.prompt === 'PICK_CARD') {
+                instruction.textContent = 'Click on one of the cards in your Hand below to play it.';
+            } else if (state.prompt === 'PICK_DRAW_OR_DISCARD') {
+                heading.textContent = 'Draw a Card';
+
+                // Check which discard piles have cards available
+                const availableDiscards = ['Yellow', 'Blue', 'White', 'Green', 'Red']
+                    .filter(col => state.discards[col] && state.discards[col].length > 0);
+
+                if (availableDiscards.length > 0) {
+                    instruction.innerHTML = 'Draw from the <strong>deck</strong> — or pick the <strong>top card</strong> from any discard pile below:';
+                } else {
+                    instruction.innerHTML = 'All discard piles are empty. Draw from the <strong>deck</strong>.';
+                }
+
+                // Primary: Draw from Deck
+                const btnDraw = document.createElement('button');
+                btnDraw.className = 'btn btn-primary';
+                btnDraw.textContent = '🃏 Draw from Deck';
+                btnDraw.addEventListener('click', () => socket.emit('input', 'u'));
+                buttonsContainer.appendChild(btnDraw);
+
+                // Divider (only if discards available)
+                if (availableDiscards.length > 0) {
+                    const divider = document.createElement('div');
+                    divider.className = 'draw-divider';
+                    divider.innerHTML = '<span>or pick from discard</span>';
+                    buttonsContainer.appendChild(divider);
+
+                    // Color buttons — clicking sends 'd' then the color in one shot
+                    availableDiscards.forEach(col => {
+                        const topCard = state.discards[col][state.discards[col].length - 1];
+                        const topVal = topCard ? (topCard.val === 0 ? '★' : topCard.val) : '?';
+                        const btn = document.createElement('button');
+                        btn.className = `btn btn-secondary btn-color-${col.toLowerCase()}`;
+                        btn.innerHTML = `${col} <span class="discard-top-hint">(top: ${topVal})</span>`;
+                        btn.addEventListener('click', () => {
+                            // Java reads 'd' for discard, then color code on the next line
+                            socket.emit('input', 'd');
+                            setTimeout(() => socket.emit('input', col.charAt(0).toLowerCase()), 80);
+                        });
+                        buttonsContainer.appendChild(btn);
+                    });
+                }
+            } else if (state.prompt === 'PICK_DISCARD_COLOR') {
+                // Fallback: Java asked for color separately (shouldn't normally reach here)
+                instruction.textContent = 'Choose which color discard pile to draw from:';
+                const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
+                colors.forEach(col => {
+                    if (state.discards[col] && state.discards[col].length > 0) {
+                        const btn = document.createElement('button');
+                        btn.className = `btn btn-secondary btn-color-${col.toLowerCase()}`;
+                        btn.textContent = col;
+                        btn.addEventListener('click', () => socket.emit('input', col.charAt(0).toLowerCase()));
+                        buttonsContainer.appendChild(btn);
+                    }
+                });
+            } else if (state.prompt === 'PLAY_AGAIN') {
+                instruction.textContent = 'Do you wish to start a new Lost Cities game?';
+                const btnYes = document.createElement('button');
+                btnYes.className = 'btn btn-primary';
+                btnYes.textContent = 'Yes, Play';
+                btnYes.addEventListener('click', () => {
+                    document.getElementById('game-over-modal').classList.add('hidden');
+                    socket.emit('input', 'y');
+                });
+                const btnNo = document.createElement('button');
+                btnNo.className = 'btn btn-secondary';
+                btnNo.textContent = 'No';
+                btnNo.addEventListener('click', () => socket.emit('input', 'n'));
+
+                buttonsContainer.appendChild(btnYes);
+                buttonsContainer.appendChild(btnNo);
+            }
+        };
+
+        // Listen for socket JVM game loop updates
+        socket.on('game-update', (data) => {
+            console.log('JVM Game Update', data);
+
+            // Auto-submit pre-selected card if transitioning to PICK_CARD
+            if (data.prompt === 'PICK_CARD' && selectedHandCardIdx !== null) {
+                const tempIndex = selectedHandCardIdx;
+                selectedHandCardIdx = null; // Clear to avoid loops
+                socket.emit('input', tempIndex.toString());
+            }
+
+            // Clear selection if prompt is not relevant
+            if (data.prompt && data.prompt !== 'PICK_CARD' && data.prompt !== 'DISCARD_OR_PLACE') {
+                selectedHandCardIdx = null;
+                selectedAction = null;
+            }
+
+            gameState = { ...gameState, ...data };
+
+            if (data.raw) {
+                const logs = document.getElementById('cli-logs');
+                logs.textContent = data.raw;
+                logs.scrollTop = logs.scrollHeight;
+            }
+
+            if (data.drawPileSize !== null && data.drawPileSize !== undefined) {
+                document.getElementById('deck-size').textContent = data.drawPileSize;
+            }
+
+            // Render expeditions & discards
+            const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
+            colors.forEach(col => {
+                renderPile(document.querySelector(`#player-placed .col-pile.${col.toLowerCase()}`), data.p1Placed[col]);
+                renderPile(document.querySelector(`#opponent-placed .col-pile.${col.toLowerCase()}`), data.p2Placed[col]);
+                renderPile(document.querySelector(`#discard-piles .col-pile.${col.toLowerCase()}`), data.discards[col]);
+            });
+
+            // Render hand
+            renderHand(data.playerHand);
+
+            // Set up Actions Control Box
+            renderActionPanel(data);
+        });
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            document.getElementById('game-over-modal').classList.add('hidden');
+            socket.emit('start-game');
+        });
+    </script>
+</body>
+</html>

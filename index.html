@@ -5,14 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lost Cities — Expedition Card Game</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Unified Academic Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&amp;family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-N83BNQ64');</script>
+    <!-- End Google Tag Manager -->
 </head>
 <body>
-    <div class="glass-bg"></div>
+
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-N83BNQ64"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <!-- Skip Link for Keyboard Accessibility -->
+    <a href="#player-hand" class="skip-link">Skip to Hand Pile</a>
+
+    <!-- Top Navigation Bar (Back link & Theme Switcher) -->
+    <div class="top-bar container">
+        <a href="/" class="back-home-link" aria-label="Back to Showcase Home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            <span>Showcase Portfolio</span>
+        </a>
+        <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle dark/light mode">
+            <!-- Sun SVG -->
+            <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            <!-- Moon SVG -->
+            <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+        </button>
+    </div>
+
     <div class="app-container">
         <header>
+            <span class="header-accent" aria-hidden="true">Expedition Mathematics Engine</span>
             <div class="logo">LOST<span>CITIES</span></div>
-            <p class="tagline">Java Game Engine &amp; Expedition Visualizer</p>
+            <p class="tagline">Java Game State &amp; Interactive Board Visualizer</p>
         </header>
 
         <main class="game-board-layout">
@@ -100,9 +147,9 @@
         <div class="modal-card">
             <h2>Match Completed!</h2>
             <p id="winner-text" class="winner-announcement">Calculating final expedition scores...</p>
-            <div class="scores-display" id="scores-display" style="margin-bottom: 2rem; background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);">
-                <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: #10b981;">Your Score: <span id="p1-score-val">0</span> pts</div>
-                <div style="font-size: 1.25rem; font-weight: 700; color: #ef4444;">AI Score: <span id="p2-score-val">0</span> pts</div>
+            <div class="scores-display" id="scores-display" style="margin-bottom: 2rem; background: var(--bg-base); padding: 1.5rem; border-radius: 4px; border: 1px solid var(--border-color);">
+                <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; color: #dc2626;">Your Score: <span id="p1-score-val">0</span> pts</div>
+                <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent);">AI Score: <span id="p2-score-val">0</span> pts</div>
             </div>
             <div class="modal-actions">
                 <button id="btn-restart" class="btn btn-primary">Start Expedition Again</button>
@@ -153,7 +200,6 @@
                 cardEl.dataset.index = index;
                 cardEl.addEventListener('click', () => {
                     if (gameState.prompt !== 'PICK_CARD' && gameState.prompt !== 'DISCARD_OR_PLACE') {
-                        // Ignore selections if it's not time to pick a card or choose action
                         return;
                     }
                     document.querySelectorAll('#player-hand .game-card').forEach(c => c.classList.remove('selected'));
@@ -168,7 +214,6 @@
                 });
             }
 
-            // Draw Value
             const valueDisplay = card.val === 0 ? '★' : card.val;
             cardEl.innerHTML = `
                 <div class="card-corner top-left">${valueDisplay}</div>
@@ -178,7 +223,6 @@
             return cardEl;
         };
 
-        // Render card piles (Yellow, Blue, White, etc.)
         const renderPile = (pileEl, cardList) => {
             pileEl.innerHTML = '';
             if (!cardList || cardList.length === 0) {
@@ -216,14 +260,12 @@
             });
         };
 
-        // Hand Selection Action Trigger
         const handleHandSelection = (card, index) => {
             if (gameState.prompt === 'PICK_CARD') {
                 socket.emit('input', index.toString());
             }
         };
 
-        // Handle Active Actions Panel
         const renderActionPanel = (state) => {
             const heading = document.getElementById('action-heading');
             const instruction = document.getElementById('action-instruction');
@@ -264,12 +306,10 @@
                     const actionName = selectedAction === 'p' ? 'Place on Expedition' : 'Discard to Trash';
                     
                     heading.textContent = 'Confirm Play';
-                    instruction.innerHTML = `You have selected:<br><br>Card: <strong style="color: #f59e0b;">${cardName}</strong><br>Action: <strong style="color: #10b981;">${actionName}</strong><br><br>Ready to commit this expedition step?`;
+                    instruction.innerHTML = `You have selected:<br><br>Card: <strong style="color: var(--accent);">${cardName}</strong><br>Action: <strong style="color: #dc2626;">${actionName}</strong><br><br>Ready to commit this expedition step?`;
                     
                     const btnConfirm = document.createElement('button');
                     btnConfirm.className = 'btn btn-primary';
-                    btnConfirm.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                    btnConfirm.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.4)';
                     btnConfirm.textContent = 'Confirm Play';
                     btnConfirm.addEventListener('click', () => {
                         const act = selectedAction;
@@ -294,7 +334,6 @@
                     
                     const btnPlace = document.createElement('button');
                     btnPlace.className = 'btn btn-primary';
-                    if (selectedAction === 'p') btnPlace.style.boxShadow = '0 0 12px #f59e0b';
                     btnPlace.textContent = 'Place Card';
                     btnPlace.addEventListener('click', () => {
                         selectedAction = 'p';
@@ -303,7 +342,6 @@
 
                     const btnDiscard = document.createElement('button');
                     btnDiscard.className = 'btn btn-secondary';
-                    if (selectedAction === 'd') btnDiscard.style.borderColor = '#f59e0b';
                     btnDiscard.textContent = 'Discard Card';
                     btnDiscard.addEventListener('click', () => {
                         selectedAction = 'd';
@@ -315,11 +353,11 @@
 
                     if (selectedAction !== null && selectedHandCardIdx === null) {
                         const actionName = selectedAction === 'p' ? 'Place' : 'Discard';
-                        instruction.innerHTML = `You chose to <strong>${actionName}</strong>.<br><br><span style="color: #94a3b8; font-size: 0.9rem; font-style: italic;">👉 Now click on a card in your hand below to confirm.</span>`;
+                        instruction.innerHTML = `You chose to <strong>${actionName}</strong>.<br><br><span style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">👉 Now click on a card in your hand below to confirm.</span>`;
                     } else if (selectedAction === null && selectedHandCardIdx !== null) {
                         const card = state.playerHand[selectedHandCardIdx];
                         const cardName = `${colorsMap[card.color]} ${card.val === 0 ? 'Multi' : card.val}`;
-                        instruction.innerHTML = `Selected card: <strong>${cardName}</strong>.<br><br><span style="color: #94a3b8; font-size: 0.9rem; font-style: italic;">👉 Now click "Place Card" or "Discard Card" to confirm.</span>`;
+                        instruction.innerHTML = `Selected card: <strong>${cardName}</strong>.<br><br><span style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">👉 Now click "Place Card" or "Discard Card" to confirm.</span>`;
                     }
                 }
             } else if (state.prompt === 'PICK_CARD') {
@@ -327,7 +365,6 @@
             } else if (state.prompt === 'PICK_DRAW_OR_DISCARD') {
                 heading.textContent = 'Draw a Card';
 
-                // Check which discard piles have cards available
                 const availableDiscards = ['Yellow', 'Blue', 'White', 'Green', 'Red']
                     .filter(col => state.discards[col] && state.discards[col].length > 0);
 
@@ -337,21 +374,18 @@
                     instruction.innerHTML = 'All discard piles are empty. Draw from the <strong>deck</strong>.';
                 }
 
-                // Primary: Draw from Deck
                 const btnDraw = document.createElement('button');
                 btnDraw.className = 'btn btn-primary';
                 btnDraw.textContent = '🃏 Draw from Deck';
                 btnDraw.addEventListener('click', () => socket.emit('input', 'u'));
                 buttonsContainer.appendChild(btnDraw);
 
-                // Divider (only if discards available)
                 if (availableDiscards.length > 0) {
                     const divider = document.createElement('div');
                     divider.className = 'draw-divider';
                     divider.innerHTML = '<span>or pick from discard</span>';
                     buttonsContainer.appendChild(divider);
 
-                    // Color buttons — clicking sends 'd' then the color in one shot
                     availableDiscards.forEach(col => {
                         const topCard = state.discards[col][state.discards[col].length - 1];
                         const topVal = topCard ? (topCard.val === 0 ? '★' : topCard.val) : '?';
@@ -359,7 +393,6 @@
                         btn.className = `btn btn-secondary btn-color-${col.toLowerCase()}`;
                         btn.innerHTML = `${col} <span class="discard-top-hint">(top: ${topVal})</span>`;
                         btn.addEventListener('click', () => {
-                            // Java reads 'd' for discard, then color code on the next line
                             socket.emit('input', 'd');
                             setTimeout(() => socket.emit('input', col.charAt(0).toLowerCase()), 80);
                         });
@@ -367,7 +400,6 @@
                     });
                 }
             } else if (state.prompt === 'PICK_DISCARD_COLOR') {
-                // Fallback: Java asked for color separately (shouldn't normally reach here)
                 instruction.textContent = 'Choose which color discard pile to draw from:';
                 const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
                 colors.forEach(col => {
@@ -398,18 +430,15 @@
             }
         };
 
-        // Listen for socket JVM game loop updates
         socket.on('game-update', (data) => {
             console.log('JVM Game Update', data);
 
-            // Auto-submit pre-selected card if transitioning to PICK_CARD
             if (data.prompt === 'PICK_CARD' && selectedHandCardIdx !== null) {
                 const tempIndex = selectedHandCardIdx;
-                selectedHandCardIdx = null; // Clear to avoid loops
+                selectedHandCardIdx = null;
                 socket.emit('input', tempIndex.toString());
             }
 
-            // Clear selection if prompt is not relevant
             if (data.prompt && data.prompt !== 'PICK_CARD' && data.prompt !== 'DISCARD_OR_PLACE') {
                 selectedHandCardIdx = null;
                 selectedAction = null;
@@ -427,7 +456,6 @@
                 document.getElementById('deck-size').textContent = data.drawPileSize;
             }
 
-            // Render expeditions & discards
             const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
             colors.forEach(col => {
                 renderPile(document.querySelector(`#player-placed .col-pile.${col.toLowerCase()}`), data.p1Placed[col]);
@@ -435,16 +463,43 @@
                 renderPile(document.querySelector(`#discard-piles .col-pile.${col.toLowerCase()}`), data.discards[col]);
             });
 
-            // Render hand
             renderHand(data.playerHand);
-
-            // Set up Actions Control Box
             renderActionPanel(data);
         });
 
         document.getElementById('btn-restart').addEventListener('click', () => {
             document.getElementById('game-over-modal').classList.add('hidden');
             socket.emit('start-game');
+        });
+
+        // ─── THEME SWITCHING SYSTEM ───
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const htmlEl = document.documentElement;
+
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                htmlEl.classList.remove('theme-light');
+                htmlEl.classList.add('theme-dark');
+                localStorage.setItem('theme', 'dark');
+            } else if (theme === 'light') {
+                htmlEl.classList.remove('theme-dark');
+                htmlEl.classList.add('theme-light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                htmlEl.classList.remove('theme-light', 'theme-dark');
+                localStorage.removeItem('theme');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            setTheme(savedTheme);
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = htmlEl.classList.contains('theme-dark') || 
+                           (!htmlEl.classList.contains('theme-light') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            setTheme(isDark ? 'light' : 'dark');
         });
     </script>
 </body>

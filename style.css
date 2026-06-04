@@ -41,23 +41,23 @@
 /* Dark Theme applied via media query */
 @media (prefers-color-scheme: dark) {
     :root:not(.theme-light) {
-        --bg-base: #0b0f19;
-        --bg-surface: #111827;
-        --bg-surface-hover: #1f2937;
+        --bg-base: #151515;
+        --bg-surface: #1e1e1e;
+        --bg-surface-hover: #2b2b2b;
         --border-color: #1f2937;
-        --border-hover: #374151;
+        --border-hover: #2c2c2c;
         
         --text-primary: #f1f5f9;
         --text-secondary: #cbd5e1;
-        --text-muted: #94a3b8;
+        --text-muted: #8e8e8e;
         
-        --accent: #60a5fa;
-        --accent-hover: #93c5fd;
-        --accent-soft: #1e3a8a;
+        --accent: #f59e0b;
+        --accent-hover: #fbbf24;
+        --accent-soft: #352510;
         
         /* Expedition Sophisticated Codes for Dark Mode */
         --exp-yellow: #f59e0b;
-        --exp-blue: #60a5fa;
+        --exp-blue: #f59e0b;
         --exp-white: #e2e8f0;
         --exp-green: #34d399;
         --exp-red: #f87171;
@@ -75,22 +75,22 @@
 
 /* Explicit Dark Theme overrides */
 :root.theme-dark {
-    --bg-base: #0b0f19;
-    --bg-surface: #111827;
-    --bg-surface-hover: #1f2937;
+    --bg-base: #151515;
+    --bg-surface: #1e1e1e;
+    --bg-surface-hover: #2b2b2b;
     --border-color: #1f2937;
-    --border-hover: #374151;
+    --border-hover: #2c2c2c;
     
     --text-primary: #f1f5f9;
     --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-muted: #8e8e8e;
     
-    --accent: #60a5fa;
-    --accent-hover: #93c5fd;
-    --accent-soft: #1e3a8a;
+    --accent: #f59e0b;
+    --accent-hover: #fbbf24;
+    --accent-soft: #352510;
     
     --exp-yellow: #f59e0b;
-    --exp-blue: #60a5fa;
+    --exp-blue: #f59e0b;
     --exp-white: #e2e8f0;
     --exp-green: #34d399;
     --exp-red: #f87171;

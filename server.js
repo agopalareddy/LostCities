@@ -7,7 +7,7 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
-  path: '/lost-cities/socket.io'
+  path: '/lost-cities/socket.io',
 });
 
 const PORT = process.env.PORT || 8082;
@@ -36,27 +36,30 @@ function parseCardsLine(line) {
   if (!match) return [];
   const content = match[1].trim();
   if (!content) return [];
-  return content.split(',').map(s => {
-    s = s.trim();
-    const m = s.match(/^([YBWGR])([\d\.]+)$/);
-    if (m) {
-      return { color: m[1], val: parseFloat(m[2]) };
-    }
-    return null;
-  }).filter(Boolean);
+  return content
+    .split(',')
+    .map((s) => {
+      s = s.trim();
+      const m = s.match(/^([YBWGR])([\d\.]+)$/);
+      if (m) {
+        return { color: m[1], val: parseFloat(m[2]) };
+      }
+      return null;
+    })
+    .filter(Boolean);
 }
 
 // Parse full game state from stdout buffer
 function parseGameState(stdout) {
   const lines = stdout.split('\n');
-  
+
   let currentTurn = 1;
   let playerHand = [];
   let p1Placed = { Yellow: [], Blue: [], White: [], Green: [], Red: [] };
   let p2Placed = { Yellow: [], Blue: [], White: [], Green: [], Red: [] };
   let discards = { Yellow: [], Blue: [], White: [], Green: [], Red: [] };
   let drawPileSize = null; // null until parsed — avoids clobbering real count with a stale default
-  
+
   let section = null; // 'p1_placed', 'p2_placed', 'discards', 'hand'
   let winnerText = null;
   let isGameOver = false;
@@ -72,16 +75,26 @@ function parseGameState(stdout) {
       currentTurn = 2;
     }
 
-    if (line.includes("Player 1's Placed Down cards:") || (line.includes("Player 1's Placed Down cards"))) {
+    if (
+      line.includes("Player 1's Placed Down cards:") ||
+      line.includes("Player 1's Placed Down cards")
+    ) {
       section = 'p1_placed';
       continue;
-    } else if (line.includes("Player 2's Placed Down cards:") || (line.includes("Player 2's Placed Down cards"))) {
+    } else if (
+      line.includes("Player 2's Placed Down cards:") ||
+      line.includes("Player 2's Placed Down cards")
+    ) {
       section = 'p2_placed';
       continue;
-    } else if (line.includes("Discard Piles:")) {
+    } else if (line.includes('Discard Piles:')) {
       section = 'discards';
       continue;
-    } else if (line.startsWith("Hand:") || line.startsWith("Player 1's Hand:") || line.startsWith("Player 2's Hand:")) {
+    } else if (
+      line.startsWith('Hand:') ||
+      line.startsWith("Player 1's Hand:") ||
+      line.startsWith("Player 2's Hand:")
+    ) {
       // Inline hand display inside card list
       const handMatch = line.match(/\[(.*?)\]/);
       if (handMatch) {
@@ -92,7 +105,7 @@ function parseGameState(stdout) {
     }
 
     // Capture draw pile size
-    if (line.includes("left in the draw pile")) {
+    if (line.includes('left in the draw pile')) {
       const match = line.match(/(\d+)\s+card/);
       if (match) {
         drawPileSize = parseInt(match[1]);
@@ -100,16 +113,16 @@ function parseGameState(stdout) {
     }
 
     // Capture Game Over state & scores
-    if (line.includes("Player 1 scored")) {
+    if (line.includes('Player 1 scored')) {
       const match = line.match(/scored\s+(-?\d+)/);
       if (match) p1Score = parseInt(match[1]);
       isGameOver = true;
     }
-    if (line.includes("Player 2 scored")) {
+    if (line.includes('Player 2 scored')) {
       const match = line.match(/scored\s+(-?\d+)/);
       if (match) p2Score = parseInt(match[1]);
     }
-    if (line.includes("won!")) {
+    if (line.includes('won!')) {
       winnerText = line;
     }
 
@@ -130,20 +143,20 @@ function parseGameState(stdout) {
   let prompt = null;
   let options = [];
 
-  if (stdout.includes("Discard or Place")) {
+  if (stdout.includes('Discard or Place')) {
     prompt = 'DISCARD_OR_PLACE';
     options = ['d', 'p'];
-  } else if (stdout.includes("Pick a card to play")) {
+  } else if (stdout.includes('Pick a card to play')) {
     prompt = 'PICK_CARD';
     // We can pick cards based on active hand indexes (0-7)
     options = playerHand.map((_, idx) => idx.toString());
-  } else if (stdout.includes("Pick from Draw Pile or Discards")) {
+  } else if (stdout.includes('Pick from Draw Pile or Discards')) {
     prompt = 'PICK_DRAW_OR_DISCARD';
     options = ['u', 'd'];
-  } else if (stdout.includes("Pick a color")) {
+  } else if (stdout.includes('Pick a color')) {
     prompt = 'PICK_DISCARD_COLOR';
     options = ['y', 'b', 'w', 'g', 'r'];
-  } else if (stdout.includes("Play again?")) {
+  } else if (stdout.includes('Play again?')) {
     prompt = 'PLAY_AGAIN';
     options = ['y', 'n'];
   }
@@ -160,7 +173,7 @@ function parseGameState(stdout) {
     isGameOver,
     winnerText,
     p1Score,
-    p2Score
+    p2Score,
   };
 }
 
@@ -180,7 +193,7 @@ io.on('connection', (socket) => {
     isGameOver: false,
     winnerText: null,
     p1Score: 0,
-    p2Score: 0
+    p2Score: 0,
   };
 
   const startGame = () => {
@@ -199,7 +212,7 @@ io.on('connection', (socket) => {
       isGameOver: false,
       winnerText: null,
       p1Score: 0,
-      p2Score: 0
+      p2Score: 0,
     };
 
     // Spawn Java process inside the package directory where files are compiled
@@ -211,21 +224,21 @@ io.on('connection', (socket) => {
       console.log(`[Java LostCities Stdout]: ${chunk}`);
 
       const state = parseGameState(outputBuffer);
-      
+
       // Update persistent game collections if we parsed newer non-empty data
       if (state.playerHand && state.playerHand.length > 0) {
         currentState.playerHand = state.playerHand;
       }
-      if (state.p1Placed && Object.values(state.p1Placed).some(arr => arr.length > 0)) {
+      if (state.p1Placed && Object.values(state.p1Placed).some((arr) => arr.length > 0)) {
         currentState.p1Placed = state.p1Placed;
       }
-      if (state.p2Placed && Object.values(state.p2Placed).some(arr => arr.length > 0)) {
+      if (state.p2Placed && Object.values(state.p2Placed).some((arr) => arr.length > 0)) {
         currentState.p2Placed = state.p2Placed;
       }
-      if (state.discards && Object.values(state.discards).some(arr => arr.length > 0)) {
+      if (state.discards && Object.values(state.discards).some((arr) => arr.length > 0)) {
         currentState.discards = state.discards;
       }
-      
+
       if (state.drawPileSize !== null) currentState.drawPileSize = state.drawPileSize;
       currentState.currentTurn = state.currentTurn;
       currentState.prompt = state.prompt || currentState.prompt;
@@ -239,7 +252,7 @@ io.on('connection', (socket) => {
 
       socket.emit('game-update', {
         ...currentState,
-        raw: outputBuffer
+        raw: outputBuffer,
       });
 
       // Reset buffer on active question prompts

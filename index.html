@@ -3,13 +3,71 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lost Cities — Expedition Card Game</title>
-    <link rel="stylesheet" href="style.css" />
-    <!-- Unified Academic Fonts -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&amp;family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;display=swap"
-      rel="stylesheet"
+    <meta
+      name="description"
+      content="Play Lost Cities, a strategic card game, against a Java AI opponent or a friend, in real time via Socket.IO."
     />
+    <title>Lost Cities — Expedition Card Game</title>
+    <link rel="stylesheet" href="style.css?v=2.0.0" />
+    <link rel="stylesheet" href="/assets/fonts/fonts.css" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css"
+      crossorigin="anonymous"
+    />
+
+    <!-- Favicons & Mobile Device Integration -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/mstile-150x150.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/mstile-70x70.png" />
+    <link rel="manifest" href="/images/manifest.json" />
+    <link rel="mask-icon" href="/images/safari-pinned-tab.svg" color="#1a3478" />
+    <meta name="msapplication-TileColor" content="#1a3478" />
+    <meta name="msapplication-TileImage" content="/images/mstile-144x144.png" />
+    <meta name="msapplication-config" content="/images/browserconfig.xml" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151515" media="(prefers-color-scheme: dark)" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://agreddy.com/lost-cities/" />
+    <meta property="og:title" content="Lost Cities — Expedition Card Game" />
+    <meta
+      property="og:description"
+      content="Play Lost Cities, a strategic card game, against a Java AI opponent or a friend, in real time."
+    />
+    <meta property="og:image" content="https://agreddy.com/images/profile.png" />
+    <meta property="og:site_name" content="Aadarsha Gopala Reddy" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://agreddy.com/lost-cities/" />
+    <meta name="twitter:title" content="Lost Cities — Expedition Card Game" />
+    <meta
+      name="twitter:description"
+      content="Play Lost Cities, a strategic card game, against a Java AI opponent or a friend, in real time."
+    />
+    <meta name="twitter:image" content="https://agreddy.com/images/profile.png" />
+    <meta name="twitter:site" content="@aadarsha2002" />
+
+    <!-- Canonical Link -->
+    <link rel="canonical" href="https://agreddy.com/lost-cities/" />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Lost Cities — Expedition Card Game",
+        "url": "https://agreddy.com/lost-cities/",
+        "applicationCategory": "Game",
+        "author": {
+          "@type": "Person",
+          "name": "Aadarsha Gopala Reddy",
+          "url": "https://agreddy.com"
+        }
+      }
+    </script>
 
     <!-- Google Tag Manager -->
     <script>
@@ -42,73 +100,40 @@
     <a href="#player-hand" class="skip-link">Skip to Hand Pile</a>
 
     <!-- Top Navigation Bar (Back link & Theme Switcher) -->
-    <div class="top-bar container">
-      <a href="/" class="back-home-link" aria-label="Back to Showcase Home">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <line x1="19" y1="12" x2="5" y2="12" />
-          <polyline points="12 19 5 12 12 5" />
-        </svg>
-        <span>Showcase Portfolio</span>
-      </a>
-      <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle dark/light mode">
-        <!-- Sun SVG -->
-        <svg
-          class="sun-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="5" />
-          <line x1="12" y1="1" x2="12" y2="3" />
-          <line x1="12" y1="21" x2="12" y2="23" />
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-          <line x1="1" y1="12" x2="3" y2="12" />
-          <line x1="21" y1="12" x2="23" y2="12" />
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-        </svg>
-        <!-- Moon SVG -->
-        <svg
-          class="moon-icon"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-        </svg>
-      </button>
-    </div>
+    <header class="top-header">
+      <div class="top-bar container">
+        <a href="/" class="back-home-link" aria-label="Back to Showcase Home">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
+          </svg>
+          <span>Showcase Portfolio</span>
+        </a>
+        <div id="theme-toggle" aria-label="Toggle theme"></div>
+      </div>
+    </header>
 
     <div class="app-container">
-      <header>
-        <span class="header-accent" aria-hidden="true">Expedition Mathematics Engine</span>
-        <div class="logo">LOST<span>CITIES</span></div>
-        <p class="tagline">Java Game State &amp; Interactive Board Visualizer</p>
-      </header>
-
       <main class="game-board-layout">
+        <div class="page-header">
+          <span class="header-accent" aria-hidden="true">Expedition Mathematics Engine</span>
+          <h1 class="logo">LOST<span>CITIES</span></h1>
+          <p class="tagline">Java Game State &amp; Interactive Board Visualizer</p>
+        </div>
+
         <!-- Left Side: Board & Collections -->
-        <div class="board-area">
+        <div class="board-area spotlight-card">
           <!-- Opponent Placed Expeditions -->
           <div class="expeditions-row opponent">
-            <h3>Opponent's Placed Expeditions (Player 2)</h3>
+            <h2>Opponent's Placed Expeditions (Player 2)</h2>
             <div class="colors-grid" id="opponent-placed">
               <div class="col-pile yellow" data-color="Yellow"></div>
               <div class="col-pile blue" data-color="Blue"></div>
@@ -128,7 +153,7 @@
             </div>
 
             <div class="discard-piles-wrapper">
-              <h3>Discard Piles</h3>
+              <h2>Discard Piles</h2>
               <div class="discard-grid" id="discard-piles">
                 <div class="col-pile yellow" data-color="Yellow" data-code="y"></div>
                 <div class="col-pile blue" data-color="Blue" data-code="b"></div>
@@ -141,7 +166,7 @@
 
           <!-- Player Placed Expeditions -->
           <div class="expeditions-row player">
-            <h3>Your Placed Expeditions (Player 1)</h3>
+            <h2>Your Placed Expeditions (Player 1)</h2>
             <div class="colors-grid" id="player-placed">
               <div class="col-pile yellow" data-color="Yellow"></div>
               <div class="col-pile blue" data-color="Blue"></div>
@@ -155,11 +180,11 @@
         <!-- Right Side: Control Panel, Actions & Hand -->
         <div class="sidebar-area">
           <!-- Action / Question Panel -->
-          <div class="card control-card">
-            <h3 id="action-heading">Game Status</h3>
+          <div class="card control-card spotlight-card">
+            <h2 id="action-heading">Game Status</h2>
             <div id="action-box" class="action-box">
-              <div class="pulse-indicator"></div>
-              <p id="action-instruction">Connecting to Lost Cities JVM...</p>
+              <div class="pulse-indicator" aria-hidden="true"></div>
+              <p id="action-instruction" aria-live="polite">Connecting to Lost Cities JVM...</p>
 
               <!-- Dynamic Button Choices will appear here -->
               <div id="choice-buttons" class="choice-buttons"></div>
@@ -167,53 +192,70 @@
           </div>
 
           <!-- Player Hand -->
-          <div class="card hand-card">
-            <h3>Your Hand (Select a Card)</h3>
+          <div class="card hand-card spotlight-card">
+            <h2>Your Hand (Select a Card)</h2>
             <div class="hand-grid" id="player-hand">
               <!-- Cards will render here -->
             </div>
           </div>
 
           <!-- Console Terminal Logs -->
-          <div class="card terminal-card">
-            <h3>Engine CLI Output</h3>
+          <div class="card terminal-card spotlight-card">
+            <h2>Engine CLI Output</h2>
             <pre id="cli-logs">Initializing game thread...</pre>
           </div>
         </div>
       </main>
     </div>
 
+    <!-- Mobile Bottom Sheet: Game Status (mirrors desktop sidebar control card) -->
+    <div class="status-sheet" id="status-sheet">
+      <div class="status-sheet-header" id="status-sheet-toggle">
+        <div class="status-sheet-handle" aria-hidden="true"></div>
+        <div class="status-sheet-summary">
+          <span class="status-sheet-summary-text" id="status-sheet-summary">Game Status</span>
+          <svg
+            class="status-sheet-toggle-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+        </div>
+      </div>
+      <div class="status-sheet-body">
+        <h2 id="action-heading-mobile">Game Status</h2>
+        <div class="action-box">
+          <div class="pulse-indicator" aria-hidden="true"></div>
+          <p id="action-instruction-mobile" aria-live="polite">Connecting to Lost Cities JVM...</p>
+          <div id="choice-buttons-mobile" class="choice-buttons"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Game Over Modal -->
-    <div id="game-over-modal" class="modal-overlay hidden">
+    <dialog id="game-over-modal" class="game-over-modal">
       <div class="modal-card">
         <h2>Match Completed!</h2>
         <p id="winner-text" class="winner-announcement">Calculating final expedition scores...</p>
-        <div
-          class="scores-display"
-          id="scores-display"
-          style="
-            margin-bottom: 2rem;
-            background: var(--bg-base);
-            padding: 1.5rem;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-          "
-        >
-          <div style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.5rem; color: #dc2626">
-            Your Score: <span id="p1-score-val">0</span> pts
-          </div>
-          <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent)">
-            AI Score: <span id="p2-score-val">0</span> pts
-          </div>
+        <div class="scores-display" id="scores-display">
+          <div class="score-line score-human">Your Score: <span id="p1-score-val">0</span> pts</div>
+          <div class="score-line score-ai">AI Score: <span id="p2-score-val">0</span> pts</div>
         </div>
         <div class="modal-actions">
           <button id="btn-restart" class="btn btn-primary">Start Expedition Again</button>
         </div>
       </div>
-    </div>
+    </dialog>
 
     <!-- Socket.IO client script -->
     <script src="/lost-cities/socket.io/socket.io.js"></script>
+    <script src="/assets/js/theme.js"></script>
     <script>
       const socket = io({
         path: '/lost-cities/socket.io',
@@ -323,6 +365,48 @@
         }
       };
 
+      // ─── Turn indicator: collapses opponent expedition row while AI is acting ───
+      const updateTurnState = (state) => {
+        // The JVM has no prompt while the AI/opponent is computing its move.
+        const isAiTurn = !state.isGameOver && !state.prompt;
+        document.body.dataset.turn = isAiTurn ? 'ai' : 'player';
+      };
+
+      // ─── Mobile bottom sheet: mirrors the desktop action panel ───
+      const statusSheet = document.getElementById('status-sheet');
+      const statusSheetToggle = document.getElementById('status-sheet-toggle');
+      const statusSheetSummary = document.getElementById('status-sheet-summary');
+
+      statusSheetToggle.addEventListener('click', () => {
+        statusSheet.classList.toggle('expanded');
+      });
+
+      const syncStatusSheet = () => {
+        const heading = document.getElementById('action-heading');
+        const instruction = document.getElementById('action-instruction');
+        const buttons = document.getElementById('choice-buttons');
+
+        document.getElementById('action-heading-mobile').textContent = heading.textContent;
+
+        const instructionMobile = document.getElementById('action-instruction-mobile');
+        instructionMobile.innerHTML = instruction.innerHTML;
+
+        const buttonsMobile = document.getElementById('choice-buttons-mobile');
+        buttonsMobile.innerHTML = '';
+        Array.from(buttons.children).forEach((child) => {
+          buttonsMobile.appendChild(child.cloneNode(true));
+        });
+        // Re-wire cloned buttons to forward clicks to the originals
+        Array.from(buttonsMobile.children).forEach((clone, idx) => {
+          const original = buttons.children[idx];
+          if (original) {
+            clone.addEventListener('click', () => original.click());
+          }
+        });
+
+        statusSheetSummary.textContent = `${heading.textContent}: ${instruction.textContent}`;
+      };
+
       const renderActionPanel = (state) => {
         const heading = document.getElementById('action-heading');
         const instruction = document.getElementById('action-instruction');
@@ -347,13 +431,16 @@
             state.p1Score !== undefined ? state.p1Score : '0';
           document.getElementById('p2-score-val').textContent =
             state.p2Score !== undefined ? state.p2Score : '0';
-          document.getElementById('game-over-modal').classList.remove('hidden');
+          const modal = document.getElementById('game-over-modal');
+          if (!modal.open) modal.showModal();
+          syncStatusSheet();
           return;
         }
 
         if (!state.prompt) {
           heading.textContent = 'Opponent Thinking';
           instruction.textContent = 'AI is executing its turn in the JVM...';
+          syncStatusSheet();
           return;
         }
 
@@ -485,7 +572,8 @@
           btnYes.className = 'btn btn-primary';
           btnYes.textContent = 'Yes, Play';
           btnYes.addEventListener('click', () => {
-            document.getElementById('game-over-modal').classList.add('hidden');
+            const modal = document.getElementById('game-over-modal');
+            if (modal.open) modal.close();
             socket.emit('input', 'y');
           });
           const btnNo = document.createElement('button');
@@ -496,6 +584,8 @@
           buttonsContainer.appendChild(btnYes);
           buttonsContainer.appendChild(btnNo);
         }
+
+        syncStatusSheet();
       };
 
       socket.on('game-update', (data) => {
@@ -542,43 +632,22 @@
 
         renderHand(data.playerHand);
         renderActionPanel(data);
+        updateTurnState(gameState);
       });
 
       document.getElementById('btn-restart').addEventListener('click', () => {
-        document.getElementById('game-over-modal').classList.add('hidden');
+        const modal = document.getElementById('game-over-modal');
+        if (modal.open) modal.close();
         socket.emit('start-game');
       });
 
-      // ─── THEME SWITCHING SYSTEM ───
-      const themeToggleBtn = document.getElementById('theme-toggle');
-      const htmlEl = document.documentElement;
-
-      function setTheme(theme) {
-        if (theme === 'dark') {
-          htmlEl.classList.remove('theme-light');
-          htmlEl.classList.add('theme-dark');
-          localStorage.setItem('theme', 'dark');
-        } else if (theme === 'light') {
-          htmlEl.classList.remove('theme-dark');
-          htmlEl.classList.add('theme-light');
-          localStorage.setItem('theme', 'light');
-        } else {
-          htmlEl.classList.remove('theme-light', 'theme-dark');
-          localStorage.removeItem('theme');
-        }
-      }
-
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme) {
-        setTheme(savedTheme);
-      }
-
-      themeToggleBtn.addEventListener('click', () => {
-        const isDark =
-          htmlEl.classList.contains('theme-dark') ||
-          (!htmlEl.classList.contains('theme-light') &&
-            window.matchMedia('(prefers-color-scheme: dark)').matches);
-        setTheme(isDark ? 'light' : 'dark');
+      // ── Spotlight cursor glow tracking ──
+      document.querySelectorAll('.spotlight-card').forEach((card) => {
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+          card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        });
       });
     </script>
   </body>

@@ -4,8 +4,7 @@ import java.util.*;
 public class Ai extends Player {
     Random rand = new Random(0);
 
-    static Color[] colors = { Color.yellow, Color.blue, Color.white, Color.green, Color.red };
-    static int[] numbers = { 0, 0, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
 
     /* CONSTRUCTORS */
 
@@ -121,12 +120,7 @@ public class Ai extends Player {
         //     potential_placed_cards.get(i).display();
         // }
 
-        ArrayList<CardsCollection> opponent_potential_placed_cards = makePotentialPlacedCards(hand,
-                opponent_placed_down, placed_down, undealt);
-        // System.out.println("opponent potential placed cards: ");
-        // for (int i = 0; i < opponent_potential_placed_cards.size(); i++) {
-        //     opponent_potential_placed_cards.get(i).display();
-        // }
+
 
         ArrayList<ArrayList<Double>> expected_scores = getExpectedScores(potential_placed_cards, undealt);
 

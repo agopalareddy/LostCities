@@ -275,22 +275,8 @@ public class CardsCollection {
         ArrayList<Card> sorted_cards = new ArrayList<>();
         for (int x = 0; x < colors.length && !is_discard_pile; x++) {
             ArrayList<Card> c = getCardsbyColorAsArrayList(colors[x]);
-            // sort c
-            for (int i = 0; i < c.size() - 1; i++) {
-                int min_card_index = i;
-                for (int j = i + 1; j < c.size(); j++) {
-                    if (c.get(j).getCardNumber() < c.get(min_card_index).getCardNumber())
-                        min_card_index = j;
-                }
-
-                Card temp = c.get(min_card_index);
-                c.remove(min_card_index);
-                c.add(min_card_index, c.get(i));
-                c.remove(i);
-                c.add(i, temp);
-            }
-            // append c to sorted_cards
-            appendCards(sorted_cards, c);
+            c.sort(Comparator.comparingDouble(Card::getCardNumber));
+            sorted_cards.addAll(c);
         }
         pile = sorted_cards;
     }
@@ -300,18 +286,5 @@ public class CardsCollection {
         for (int num : numbers) {
             addCard(new Card(num, col));
         }
-    }
-
-    /* PROTECTED FUNCTIONS */
-
-    /*
-     * Append 2nd ArrayList parameter to 1st ArrayList parameter
-     * Return 1st ArrayList
-     */
-    protected ArrayList<Card> appendCards(ArrayList<Card> to, ArrayList<Card> from) {
-        for (Card c : from) {
-            to.add(c);
-        }
-        return to;
     }
 }

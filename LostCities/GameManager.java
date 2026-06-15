@@ -22,24 +22,18 @@ public class GameManager {
     CardsCollection undealt;
     DiscardPiles discards;
 
-    File file;
-    Scanner in;
-    Scanner in2;
-
     /* CONSTRUCTORS */
 
     /* Initialize the internal variables */
     public GameManager(String s1, String s2) {
-        if (s1 == "human") {
-            // p1 = new Human("testCasesp1.txt");
-            p1 = new Human("emptyFileForHuman.txt");
+        if ("human".equals(s1)) {
+            p1 = new Human("");
         } else {
             p1 = new Ai();
         }
 
-        if (s2 == "human") {
+        if ("human".equals(s2)) {
             p2 = new Human("testCasesp2.txt");
-            // p2 = new Human("emptyFileForHuman.txt");
         } else {
             p2 = new Ai();
         }

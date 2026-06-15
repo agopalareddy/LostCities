@@ -30,17 +30,6 @@ public abstract class Player {
         in = new Scanner(System.in);
     }
 
-    /* Make a custom hand based on given cards */
-    Player(CardsCollection c) {
-        hand = c;
-        placed_down = new ArrayList<>();
-
-        for (int i = 0; i < 5; i++) {
-            placed_down.add(new CardsCollection());
-        }
-        in = new Scanner(System.in);
-    }
-
     /* ABSTRACT DEFINITIONS */
 
     /*

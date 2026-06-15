@@ -642,12 +642,13 @@
       });
 
       // ── Spotlight cursor glow tracking ──
-      document.querySelectorAll('.spotlight-card').forEach((card) => {
-        card.addEventListener('mousemove', (e) => {
+      document.addEventListener('mousemove', (e) => {
+        const card = e.target.closest('.spotlight-card');
+        if (card) {
           const rect = card.getBoundingClientRect();
           card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
           card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-        });
+        }
       });
     </script>
   </body>

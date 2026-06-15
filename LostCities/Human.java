@@ -3,29 +3,24 @@ import java.awt.*;
 import java.util.*;
 
 public class Human extends Player {
-    static Color[] colors = { Color.yellow, Color.blue, Color.white, Color.green, Color.red };
-    static int[] numbers = { 0, 0, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-
     File file;
     Scanner in2;
     Scanner in3;
 
     /* CONSTRUCTORS */
 
-    /* Default CONSTRUCTOR */
-    public Human() {
-    }
-
     /*
      * Takes in a string indicating the file name from in which moves have been
      * written already
      */
     public Human(String file_name) {
-        file = new File(file_name);
-        try {
-            in2 = new Scanner(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+        if (file_name != null && !file_name.isEmpty()) {
+            file = new File(file_name);
+            try {
+                in2 = new Scanner(file);
+            } catch (FileNotFoundException e) {
+                // File not found is expected if we're not running test cases, ignore gracefully
+            }
         }
         in3 = new Scanner(System.in);
     }
@@ -204,7 +199,7 @@ public class Human extends Player {
      */
     protected String getNextString() {
         String s;
-        if (in2.hasNextLine()) {
+        if (in2 != null && in2.hasNextLine()) {
             s = in2.nextLine();
             System.out.println(s);
             return s;

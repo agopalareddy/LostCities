@@ -21,11 +21,4 @@ public class LostCities {
             }
         }
     }
-
-    protected static String askAiHuman(int player_number) {
-        try (Scanner in = new Scanner(System.in)) {
-            System.out.print("What is player " + player_number + " [AI/Human]? ");
-            return in.nextLine().toLowerCase();
-        }
-    }
 }

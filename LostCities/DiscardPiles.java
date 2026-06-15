@@ -9,8 +9,8 @@ Holds:
 */
 
 public class DiscardPiles {
-    static Color[] colors = { Color.yellow, Color.blue, Color.white, Color.green, Color.red };
-    static int[] numbers = { 0, 0, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+    static Color[] colors = Player.colors;
+    static int[] numbers = Player.numbers;
 
     ArrayList<CardsCollection> discard_piles = new ArrayList<>(); // just holds a list of discard piles for each color
 

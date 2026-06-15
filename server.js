@@ -55,6 +55,8 @@ function parseGameState(stdout) {
 
   let currentTurn = 1;
   let playerHand = [];
+  let player1Hand = [];
+  let player2Hand = [];
   let p1Placed = { Yellow: [], Blue: [], White: [], Green: [], Red: [] };
   let p2Placed = { Yellow: [], Blue: [], White: [], Green: [], Red: [] };
   let discards = { Yellow: [], Blue: [], White: [], Green: [], Red: [] };
@@ -90,15 +92,26 @@ function parseGameState(stdout) {
     } else if (line.includes('Discard Piles:')) {
       section = 'discards';
       continue;
-    } else if (
-      line.startsWith('Hand:') ||
-      line.startsWith("Player 1's Hand:") ||
-      line.startsWith("Player 2's Hand:")
-    ) {
-      // Inline hand display inside card list
-      const handMatch = line.match(/\[(.*?)\]/);
-      if (handMatch) {
-        playerHand = parseCardsLine(line);
+    } else if (line.includes("Player 1's Hand:") || line.includes("Player 1's Hand")) {
+      const nextLine = lines[i + 1] ? lines[i + 1].trim() : '';
+      if (nextLine.startsWith('[')) {
+        player1Hand = parseCardsLine(nextLine);
+      }
+      section = null;
+      continue;
+    } else if (line.includes("Player 2's Hand:") || line.includes("Player 2's Hand")) {
+      const nextLine = lines[i + 1] ? lines[i + 1].trim() : '';
+      if (nextLine.startsWith('[')) {
+        player2Hand = parseCardsLine(nextLine);
+      }
+      section = null;
+      continue;
+    } else if (line.startsWith('Hand:')) {
+      const cards = parseCardsLine(line);
+      if (currentTurn === 1) {
+        player1Hand = cards;
+      } else {
+        player2Hand = cards;
       }
       section = null;
       continue;
@@ -163,7 +176,9 @@ function parseGameState(stdout) {
 
   return {
     currentTurn,
-    playerHand,
+    player1Hand,
+    player2Hand,
+    playerHand: currentTurn === 1 ? player1Hand : player2Hand,
     p1Placed,
     p2Placed,
     discards,
@@ -184,6 +199,8 @@ io.on('connection', (socket) => {
   let currentState = {
     currentTurn: 1,
     playerHand: [],
+    player1Hand: [],
+    player2Hand: [],
     p1Placed: { Yellow: [], Blue: [], White: [], Green: [], Red: [] },
     p2Placed: { Yellow: [], Blue: [], White: [], Green: [], Red: [] },
     discards: { Yellow: [], Blue: [], White: [], Green: [], Red: [] },
@@ -194,15 +211,18 @@ io.on('connection', (socket) => {
     winnerText: null,
     p1Score: 0,
     p2Score: 0,
+    gameMode: 'ai',
   };
 
-  const startGame = () => {
+  const startGame = (mode) => {
     if (javaProcess) {
       javaProcess.kill();
     }
     currentState = {
       currentTurn: 1,
       playerHand: [],
+      player1Hand: [],
+      player2Hand: [],
       p1Placed: { Yellow: [], Blue: [], White: [], Green: [], Red: [] },
       p2Placed: { Yellow: [], Blue: [], White: [], Green: [], Red: [] },
       discards: { Yellow: [], Blue: [], White: [], Green: [], Red: [] },
@@ -213,10 +233,14 @@ io.on('connection', (socket) => {
       winnerText: null,
       p1Score: 0,
       p2Score: 0,
+      gameMode: mode || 'ai',
     };
 
-    // Spawn Java process inside the package directory where files are compiled
-    javaProcess = spawn('java', ['LostCities'], { cwd: path.join(__dirname, 'LostCities') });
+    const p2Type = mode === 'human' ? 'human' : 'ai';
+    console.log(`Spawning Java process: LostCities human ${p2Type}`);
+    javaProcess = spawn('java', ['LostCities', 'human', p2Type], {
+      cwd: path.join(__dirname, 'LostCities'),
+    });
 
     javaProcess.stdout.on('data', (data) => {
       const chunk = data.toString();
@@ -226,9 +250,15 @@ io.on('connection', (socket) => {
       const state = parseGameState(outputBuffer);
 
       // Update persistent game collections if we parsed newer non-empty data
-      if (state.playerHand && state.playerHand.length > 0) {
-        currentState.playerHand = state.playerHand;
+      if (state.player1Hand && state.player1Hand.length > 0) {
+        currentState.player1Hand = state.player1Hand;
       }
+      if (state.player2Hand && state.player2Hand.length > 0) {
+        currentState.player2Hand = state.player2Hand;
+      }
+      currentState.playerHand =
+        currentState.currentTurn === 1 ? currentState.player1Hand : currentState.player2Hand;
+
       if (state.p1Placed && Object.values(state.p1Placed).some((arr) => arr.length > 0)) {
         currentState.p1Placed = state.p1Placed;
       }
@@ -271,8 +301,8 @@ io.on('connection', (socket) => {
     });
   };
 
-  socket.on('start-game', () => {
-    startGame();
+  socket.on('start-game', (mode) => {
+    startGame(mode);
   });
 
   socket.on('input', (message) => {

@@ -117,18 +117,23 @@
           </svg>
           <span>Showcase Portfolio</span>
         </a>
+        <h1 class="logo header-logo">LOST<span>CITIES</span></h1>
         <div id="theme-toggle" aria-label="Toggle theme"></div>
       </div>
     </header>
 
     <div class="app-container">
-      <main class="game-board-layout">
-        <div class="page-header">
-          <span class="header-accent" aria-hidden="true">Expedition Mathematics Engine</span>
-          <h1 class="logo">LOST<span>CITIES</span></h1>
-          <p class="tagline">Java Game State &amp; Interactive Board Visualizer</p>
-        </div>
+      <!-- Sub-header Toolbar Actions -->
+      <div class="sub-header-actions">
+        <button id="btn-reset-game" class="btn btn-secondary">
+          <i class="fa-solid fa-rotate-left"></i> Reset Game
+        </button>
+        <button id="btn-switch-mode" class="btn btn-primary">
+          <i class="fa-solid fa-robot"></i> Mode: vs AI
+        </button>
+      </div>
 
+      <main class="game-board-layout">
         <!-- Left Side: Board & Collections -->
         <div class="board-area spotlight-card">
           <!-- Opponent Placed Expeditions -->
@@ -199,13 +204,28 @@
             </div>
           </div>
 
-          <!-- Console Terminal Logs -->
-          <div class="card terminal-card spotlight-card">
-            <h2>Engine CLI Output</h2>
-            <pre id="cli-logs">Initializing game thread...</pre>
+          <!-- Player 2 / AI Hand -->
+          <div class="card p2-hand-card spotlight-card">
+            <div class="hand-header-row">
+              <h2 id="p2-hand-title">Opponent Hand (Player 2)</h2>
+              <button id="btn-toggle-p2-hand" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-eye-slash"></i> Show
+              </button>
+            </div>
+            <div class="hand-grid" id="player2-hand">
+              <!-- Cards will render here -->
+            </div>
           </div>
         </div>
       </main>
+
+      <!-- Collapsible Console Terminal Logs -->
+      <details class="card terminal-details spotlight-card">
+        <summary>Engine CLI Output (JVM Logs)</summary>
+        <div class="terminal-content">
+          <pre id="cli-logs">Initializing game thread...</pre>
+        </div>
+      </details>
     </div>
 
     <!-- Mobile Bottom Sheet: Game Status (mirrors desktop sidebar control card) -->
@@ -264,6 +284,8 @@
       let gameState = {
         currentTurn: 1,
         playerHand: [],
+        player1Hand: [],
+        player2Hand: [],
         p1Placed: {},
         p2Placed: {},
         discards: {},
@@ -272,13 +294,16 @@
         options: [],
         isGameOver: false,
         winnerText: null,
+        gameMode: 'ai',
       };
 
       let selectedHandCardIdx = null;
       let selectedAction = null; // 'p' (Place) or 'd' (Discard)
+      let activeMode = 'ai'; // 'ai' or 'human'
+      let p2HandVisible = false;
 
       // Start lost cities engine
-      socket.emit('start-game');
+      socket.emit('start-game', activeMode);
 
       const colorsMap = {
         Y: 'Yellow',
@@ -288,6 +313,45 @@
         R: 'Red',
       };
 
+      const updateModeUI = () => {
+        const btn = document.getElementById('btn-switch-mode');
+        if (activeMode === 'human') {
+          btn.innerHTML = '<i class="fa-solid fa-user-group"></i> Mode: vs Human';
+          btn.className = 'btn btn-secondary';
+        } else {
+          btn.innerHTML = '<i class="fa-solid fa-robot"></i> Mode: vs AI';
+          btn.className = 'btn btn-primary';
+        }
+      };
+
+      document.getElementById('btn-switch-mode').addEventListener('click', () => {
+        activeMode = activeMode === 'ai' ? 'human' : 'ai';
+        updateModeUI();
+        selectedHandCardIdx = null;
+        clearVisualHighlights();
+        socket.emit('start-game', activeMode);
+      });
+
+      document.getElementById('btn-reset-game').addEventListener('click', () => {
+        selectedHandCardIdx = null;
+        clearVisualHighlights();
+        socket.emit('start-game', activeMode);
+      });
+
+      document.getElementById('btn-toggle-p2-hand').addEventListener('click', () => {
+        p2HandVisible = !p2HandVisible;
+        const btn = document.getElementById('btn-toggle-p2-hand');
+        if (p2HandVisible) {
+          btn.innerHTML = '<i class="fa-solid fa-eye"></i> Hide';
+          btn.className = 'btn btn-secondary btn-sm';
+        } else {
+          btn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Show';
+          btn.className = 'btn btn-primary btn-sm';
+        }
+        const player2HandGrid = document.getElementById('player2-hand');
+        renderHand(player2HandGrid, gameState.player2Hand, !p2HandVisible, true);
+      });
+
       const clearVisualHighlights = () => {
         document
           .querySelectorAll('.col-pile, .draw-deck')
@@ -295,7 +359,7 @@
             p.classList.remove('highlight-place', 'highlight-discard', 'highlight-draw')
           );
         document
-          .querySelectorAll('#player-hand .game-card')
+          .querySelectorAll('.hand-grid .game-card')
           .forEach((c) => c.classList.remove('selected'));
       };
 
@@ -309,8 +373,10 @@
         const colorName = colorsMap[card.color];
         if (!colorName) return;
 
+        const placePileSelector =
+          gameState.currentTurn === 1 ? '#player-placed' : '#opponent-placed';
         const placePile = document.querySelector(
-          `#player-placed .col-pile.${colorName.toLowerCase()}`
+          `${placePileSelector} .col-pile.${colorName.toLowerCase()}`
         );
         if (placePile) {
           placePile.classList.add('highlight-place');
@@ -350,12 +416,21 @@
         });
       };
 
-      const createCardHTML = (card, index = null) => {
+      const createCardBackHTML = () => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'game-card card-back-small';
+        return cardEl;
+      };
+
+      const createCardHTML = (card, index = null, isClickable = true) => {
         const cardEl = document.createElement('div');
         const colorClass = colorsMap[card.color]?.toLowerCase() || 'yellow';
         cardEl.className = `game-card ${colorClass}`;
+        if (!isClickable) {
+          cardEl.classList.add('non-interactive');
+        }
 
-        if (index !== null) {
+        if (index !== null && isClickable) {
           cardEl.dataset.index = index;
           cardEl.addEventListener('click', () => {
             if (gameState.prompt !== 'PICK_CARD' && gameState.prompt !== 'DISCARD_OR_PLACE') {
@@ -407,7 +482,7 @@
           return;
         }
         cardList.forEach((card) => {
-          const cardEl = createCardHTML(card);
+          const cardEl = createCardHTML(card, null, false);
           pileEl.appendChild(cardEl);
         });
       };
@@ -422,29 +497,32 @@
           return;
         }
         const topCard = cardList[cardList.length - 1];
-        const cardEl = createCardHTML(topCard);
+        const cardEl = createCardHTML(topCard, null, false);
         pileEl.appendChild(cardEl);
       };
 
-      const renderHand = (handList) => {
-        const handGrid = document.getElementById('player-hand');
+      const renderHand = (handGrid, handList, isHidden, isPlayer2) => {
         handGrid.innerHTML = '';
-        if (gameState.prompt !== 'PICK_CARD' && gameState.prompt !== 'DISCARD_OR_PLACE') {
-          handGrid.classList.add('inactive-hand');
-        } else {
-          handGrid.classList.remove('inactive-hand');
-        }
-
-        if (handList.length === 0) {
+        if (!handList || handList.length === 0) {
           handGrid.innerHTML = '<p class="empty-info">Drawing hand...</p>';
           return;
         }
+
+        const isClickable = !isPlayer2 ? gameState.currentTurn === 1 : gameState.currentTurn === 2;
+
         handList.forEach((card, idx) => {
-          const cardEl = createCardHTML(card, idx);
-          if (selectedHandCardIdx === idx) {
-            cardEl.classList.add('selected');
+          if (isHidden) {
+            const cardEl = createCardBackHTML();
+            handGrid.appendChild(cardEl);
+          } else {
+            const cardEl = createCardHTML(card, idx, isClickable);
+            if (!isPlayer2 && selectedHandCardIdx === idx && gameState.currentTurn === 1) {
+              cardEl.classList.add('selected');
+            } else if (isPlayer2 && selectedHandCardIdx === idx && gameState.currentTurn === 2) {
+              cardEl.classList.add('selected');
+            }
+            handGrid.appendChild(cardEl);
           }
-          handGrid.appendChild(cardEl);
         });
       };
 
@@ -456,8 +534,7 @@
 
       // ─── Turn indicator: collapses opponent expedition row while AI is acting ───
       const updateTurnState = (state) => {
-        // The JVM has no prompt while the AI/opponent is computing its move.
-        const isAiTurn = !state.isGameOver && !state.prompt;
+        const isAiTurn = state.gameMode === 'ai' && !state.isGameOver && !state.prompt;
         document.body.dataset.turn = isAiTurn ? 'ai' : 'player';
       };
 
@@ -508,9 +585,10 @@
 
           let winnerAnnouncement = state.winnerText || '';
           if (winnerAnnouncement.includes('Player 1 won')) {
-            winnerAnnouncement = '🏆 Congratulations! You defeated the AI!';
+            winnerAnnouncement = '🏆 Congratulations! Player 1 won the match!';
           } else if (winnerAnnouncement.includes('Player 2 won')) {
-            winnerAnnouncement = '🤖 The AI won the match. Better luck next expedition!';
+            const opponentName = state.gameMode === 'ai' ? 'the AI' : 'Player 2';
+            winnerAnnouncement = `🏆 Congratulations! ${opponentName} won the match!`;
           }
 
           instruction.textContent = winnerAnnouncement || 'The match has finished!';
@@ -527,20 +605,22 @@
         }
 
         if (!state.prompt) {
-          heading.textContent = 'Opponent Thinking';
-          instruction.textContent = 'AI is executing its turn in the JVM...';
+          const opponentName = state.gameMode === 'ai' ? 'AI' : 'Player 2';
+          heading.textContent = `${opponentName} Thinking`;
+          instruction.textContent = `${opponentName} is executing its turn in the JVM...`;
           syncStatusSheet();
           return;
         }
 
-        heading.textContent = 'Action Required';
+        heading.textContent = `Player ${state.currentTurn} Action`;
 
         if (state.prompt === 'DISCARD_OR_PLACE') {
           if (selectedHandCardIdx === null) {
-            heading.textContent = 'Play a Card';
-            instruction.innerHTML = '👈 Click on a card in your hand below to select it.';
+            heading.textContent = `Play a Card`;
+            instruction.innerHTML = `👈 Click on a card in Player ${state.currentTurn}'s Hand below to select it.`;
           } else {
-            const card = state.playerHand[selectedHandCardIdx];
+            const activeHand = state.currentTurn === 1 ? state.player1Hand : state.player2Hand;
+            const card = activeHand[selectedHandCardIdx];
             const cardName = `${colorsMap[card.color]} ${card.val === 0 ? 'Multi' : card.val}`;
             heading.textContent = 'Select Target';
             instruction.innerHTML = `You selected <strong>${cardName}</strong>.<br><br>👉 Click the green-glowing slot on the board to <strong>Place</strong> it, or the orange-glowing slot to <strong>Discard</strong> it.`;
@@ -573,7 +653,7 @@
             buttonsContainer.appendChild(btnCancel);
           }
         } else if (state.prompt === 'PICK_CARD') {
-          instruction.textContent = 'Click on one of the cards in your Hand below to play it.';
+          instruction.textContent = `Click on one of the cards in Player ${state.currentTurn}'s Hand below to play it.`;
         } else if (state.prompt === 'PICK_DRAW_OR_DISCARD') {
           heading.textContent = 'Draw a Card';
           instruction.innerHTML =
@@ -662,6 +742,12 @@
 
         gameState = { ...gameState, ...data };
 
+        // Handle auto-detect activeMode
+        if (data.gameMode && data.gameMode !== activeMode) {
+          activeMode = data.gameMode;
+          updateModeUI();
+        }
+
         if (data.raw) {
           const logs = document.getElementById('cli-logs');
           logs.textContent = data.raw;
@@ -696,7 +782,34 @@
           );
         });
 
-        renderHand(data.playerHand);
+        // Set P2 Hand Title
+        const p2Title = document.getElementById('p2-hand-title');
+        if (gameState.gameMode === 'human') {
+          p2Title.textContent = 'Player 2 Hand';
+        } else {
+          p2Title.textContent = 'AI Hand (Player 2)';
+        }
+
+        const playerHandGrid = document.getElementById('player-hand');
+        const player2HandGrid = document.getElementById('player2-hand');
+
+        // Grey out hands depending on who's turn it is
+        if (gameState.prompt === 'PICK_CARD' || gameState.prompt === 'DISCARD_OR_PLACE') {
+          if (gameState.currentTurn === 1) {
+            playerHandGrid.classList.remove('inactive-hand');
+            player2HandGrid.classList.add('inactive-hand');
+          } else {
+            playerHandGrid.classList.add('inactive-hand');
+            player2HandGrid.classList.remove('inactive-hand');
+          }
+        } else {
+          playerHandGrid.classList.add('inactive-hand');
+          player2HandGrid.classList.add('inactive-hand');
+        }
+
+        renderHand(playerHandGrid, data.player1Hand, false, false);
+        renderHand(player2HandGrid, data.player2Hand, !p2HandVisible, true);
+
         renderActionPanel(data);
         updateTurnState(gameState);
       });
@@ -704,7 +817,7 @@
       document.getElementById('btn-restart').addEventListener('click', () => {
         const modal = document.getElementById('game-over-modal');
         if (modal.open) modal.close();
-        socket.emit('start-game');
+        socket.emit('start-game', activeMode);
       });
 
       // ── Spotlight cursor glow tracking ──

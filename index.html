@@ -138,7 +138,7 @@
         <div class="board-area spotlight-card">
           <!-- Player Placed Expeditions -->
           <div class="expeditions-row player">
-            <h2>Your Placed Expeditions (Player 1)</h2>
+            <h2 id="player-placed-title">Your Placed Expeditions (Player 1)</h2>
             <div class="colors-grid" id="player-placed">
               <div class="col-pile yellow" data-color="Yellow"></div>
               <div class="col-pile blue" data-color="Blue"></div>
@@ -171,7 +171,7 @@
 
           <!-- Opponent Placed Expeditions -->
           <div class="expeditions-row opponent">
-            <h2>Opponent's Placed Expeditions (Player 2)</h2>
+            <h2 id="opponent-placed-title">Opponent's Placed Expeditions (Player 2)</h2>
             <div class="colors-grid" id="opponent-placed">
               <div class="col-pile yellow" data-color="Yellow"></div>
               <div class="col-pile blue" data-color="Blue"></div>
@@ -186,7 +186,7 @@
         <div class="sidebar-area">
           <!-- Player Hand -->
           <div class="card hand-card spotlight-card">
-            <h2>Your Hand (Select a Card)</h2>
+            <h2 id="player-hand-title">Your Hand (Select a Card)</h2>
             <div class="hand-grid" id="player-hand">
               <!-- Cards will render here -->
             </div>
@@ -273,6 +273,22 @@
       </div>
     </dialog>
 
+    <!-- Pass Phone Modal -->
+    <dialog id="pass-phone-modal" class="game-over-modal">
+      <div class="modal-card">
+        <h2>Pass the Device!</h2>
+        <p class="winner-announcement">
+          It is now Player <span id="pass-player-num">2</span>'s turn.
+        </p>
+        <p>Please pass the device to Player <span id="pass-player-num-2">2</span>.</p>
+        <div class="modal-actions">
+          <button id="btn-pass-ready" class="btn btn-primary">
+            I am Player <span id="pass-player-num-3">2</span> (Show Board)
+          </button>
+        </div>
+      </div>
+    </dialog>
+
     <!-- Socket.IO client script -->
     <script src="/lost-cities/socket.io/socket.io.js"></script>
     <script src="/assets/js/theme.js"></script>
@@ -301,6 +317,7 @@
       let selectedAction = null; // 'p' (Place) or 'd' (Discard)
       let activeMode = 'ai'; // 'ai' or 'human'
       let p2HandVisible = false;
+      let lastTurn = null;
 
       // Start lost cities engine
       socket.emit('start-game', activeMode);
@@ -328,12 +345,14 @@
         activeMode = activeMode === 'ai' ? 'human' : 'ai';
         updateModeUI();
         selectedHandCardIdx = null;
+        lastTurn = null;
         clearVisualHighlights();
         socket.emit('start-game', activeMode);
       });
 
       document.getElementById('btn-reset-game').addEventListener('click', () => {
         selectedHandCardIdx = null;
+        lastTurn = null;
         clearVisualHighlights();
         socket.emit('start-game', activeMode);
       });
@@ -349,7 +368,9 @@
           btn.className = 'btn btn-primary btn-sm';
         }
         const player2HandGrid = document.getElementById('player2-hand');
-        renderHand(player2HandGrid, gameState.player2Hand, !p2HandVisible, true);
+        const activePlayerNum = gameState.gameMode === 'human' ? gameState.currentTurn : 1;
+        const inactiveHand = activePlayerNum === 1 ? gameState.player2Hand : gameState.player1Hand;
+        renderHand(player2HandGrid, inactiveHand, !p2HandVisible, true);
       });
 
       const clearVisualHighlights = () => {
@@ -373,10 +394,8 @@
         const colorName = colorsMap[card.color];
         if (!colorName) return;
 
-        const placePileSelector =
-          gameState.currentTurn === 1 ? '#player-placed' : '#opponent-placed';
         const placePile = document.querySelector(
-          `${placePileSelector} .col-pile.${colorName.toLowerCase()}`
+          `#player-placed .col-pile.${colorName.toLowerCase()}`
         );
         if (placePile) {
           placePile.classList.add('highlight-place');
@@ -508,7 +527,7 @@
           return;
         }
 
-        const isClickable = !isPlayer2 ? gameState.currentTurn === 1 : gameState.currentTurn === 2;
+        const isClickable = !isPlayer2;
 
         handList.forEach((card, idx) => {
           if (isHidden) {
@@ -516,9 +535,7 @@
             handGrid.appendChild(cardEl);
           } else {
             const cardEl = createCardHTML(card, idx, isClickable);
-            if (!isPlayer2 && selectedHandCardIdx === idx && gameState.currentTurn === 1) {
-              cardEl.classList.add('selected');
-            } else if (isPlayer2 && selectedHandCardIdx === idx && gameState.currentTurn === 2) {
+            if (!isPlayer2 && selectedHandCardIdx === idx) {
               cardEl.classList.add('selected');
             }
             handGrid.appendChild(cardEl);
@@ -537,6 +554,23 @@
         const isAiTurn = state.gameMode === 'ai' && !state.isGameOver && !state.prompt;
         document.body.dataset.turn = isAiTurn ? 'ai' : 'player';
       };
+
+      // ─── Pass Screen Dialog handling ───
+      const passModal = document.getElementById('pass-phone-modal');
+      const passPlayerNum = document.getElementById('pass-player-num');
+      const passPlayerNum2 = document.getElementById('pass-player-num-2');
+      const passPlayerNum3 = document.getElementById('pass-player-num-3');
+
+      const showPassScreen = (nextPlayer) => {
+        passPlayerNum.textContent = nextPlayer;
+        passPlayerNum2.textContent = nextPlayer;
+        passPlayerNum3.textContent = nextPlayer;
+        if (!passModal.open) passModal.showModal();
+      };
+
+      document.getElementById('btn-pass-ready').addEventListener('click', () => {
+        passModal.close();
+      });
 
       // ─── Mobile bottom sheet: mirrors the desktop action panel ───
       const statusSheet = document.getElementById('status-sheet');
@@ -748,6 +782,22 @@
           updateModeUI();
         }
 
+        // Handle Pass Screen for Human vs Human mode on device pass
+        if (
+          gameState.gameMode === 'human' &&
+          data.currentTurn !== lastTurn &&
+          lastTurn !== null &&
+          !data.isGameOver
+        ) {
+          showPassScreen(data.currentTurn);
+          // Hide opponent hand on turn change
+          p2HandVisible = false;
+          const toggleBtn = document.getElementById('btn-toggle-p2-hand');
+          toggleBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i> Show';
+          toggleBtn.className = 'btn btn-primary btn-sm';
+        }
+        lastTurn = data.currentTurn;
+
         if (data.raw) {
           const logs = document.getElementById('cli-logs');
           logs.textContent = data.raw;
@@ -766,15 +816,26 @@
           highlightDrawZones(gameState);
         }
 
+        // Determine active vs inactive player mapping dynamically
+        const activePlayerNum = data.gameMode === 'human' ? data.currentTurn : 1;
+        const inactivePlayerNum = activePlayerNum === 1 ? 2 : 1;
+
+        const activePlaced = activePlayerNum === 1 ? data.p1Placed : data.p2Placed;
+        const inactivePlaced = activePlayerNum === 1 ? data.p2Placed : data.p1Placed;
+
+        const activeHand = activePlayerNum === 1 ? data.player1Hand : data.player2Hand;
+        const inactiveHand = activePlayerNum === 1 ? data.player2Hand : data.player1Hand;
+
+        // Render placed cards
         const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
         colors.forEach((col) => {
           renderPile(
             document.querySelector(`#player-placed .col-pile.${col.toLowerCase()}`),
-            data.p1Placed[col]
+            activePlaced[col]
           );
           renderPile(
             document.querySelector(`#opponent-placed .col-pile.${col.toLowerCase()}`),
-            data.p2Placed[col]
+            inactivePlaced[col]
           );
           renderDiscardPile(
             document.querySelector(`#discard-piles .col-pile.${col.toLowerCase()}`),
@@ -782,12 +843,23 @@
           );
         });
 
-        // Set P2 Hand Title
-        const p2Title = document.getElementById('p2-hand-title');
-        if (gameState.gameMode === 'human') {
-          p2Title.textContent = 'Player 2 Hand';
+        // Set Dynamic Titles
+        if (data.gameMode === 'human') {
+          document.getElementById('player-placed-title').textContent =
+            `Your Placed Expeditions (Player ${activePlayerNum})`;
+          document.getElementById('opponent-placed-title').textContent =
+            `Opponent's Placed Expeditions (Player ${inactivePlayerNum})`;
+          document.getElementById('player-hand-title').textContent =
+            `Your Hand (Player ${activePlayerNum})`;
+          document.getElementById('p2-hand-title').textContent =
+            `Opponent Hand (Player ${inactivePlayerNum})`;
         } else {
-          p2Title.textContent = 'AI Hand (Player 2)';
+          document.getElementById('player-placed-title').textContent =
+            'Your Placed Expeditions (Player 1)';
+          document.getElementById('opponent-placed-title').textContent =
+            "Opponent's Placed Expeditions (Player 2)";
+          document.getElementById('player-hand-title').textContent = 'Your Hand (Select a Card)';
+          document.getElementById('p2-hand-title').textContent = 'AI Hand (Player 2)';
         }
 
         const playerHandGrid = document.getElementById('player-hand');
@@ -795,20 +867,15 @@
 
         // Grey out hands depending on who's turn it is
         if (gameState.prompt === 'PICK_CARD' || gameState.prompt === 'DISCARD_OR_PLACE') {
-          if (gameState.currentTurn === 1) {
-            playerHandGrid.classList.remove('inactive-hand');
-            player2HandGrid.classList.add('inactive-hand');
-          } else {
-            playerHandGrid.classList.add('inactive-hand');
-            player2HandGrid.classList.remove('inactive-hand');
-          }
+          playerHandGrid.classList.remove('inactive-hand');
+          player2HandGrid.classList.add('inactive-hand');
         } else {
           playerHandGrid.classList.add('inactive-hand');
           player2HandGrid.classList.add('inactive-hand');
         }
 
-        renderHand(playerHandGrid, data.player1Hand, false, false);
-        renderHand(player2HandGrid, data.player2Hand, !p2HandVisible, true);
+        renderHand(playerHandGrid, activeHand, false, false);
+        renderHand(player2HandGrid, inactiveHand, !p2HandVisible, true);
 
         renderActionPanel(data);
         updateTurnState(gameState);
@@ -817,6 +884,7 @@
       document.getElementById('btn-restart').addEventListener('click', () => {
         const modal = document.getElementById('game-over-modal');
         if (modal.open) modal.close();
+        lastTurn = null;
         socket.emit('start-game', activeMode);
       });
 

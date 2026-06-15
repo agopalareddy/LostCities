@@ -68,3 +68,11 @@ The search evaluator is intentionally state-driven: after a simulated draw, it s
    npm start
    ```
 6. Open your browser to `http://localhost:8082`.
+
+## Deployment
+
+The GCP host runs the Java engine from compiled `.class` files, so deploys must compile after pulling source changes:
+
+```bash
+ssh gcp-showcase "cd /opt/LostCities && git pull origin master && cd LostCities && javac *.java && java AiSearchRegressionTest && cd .. && pm2 restart lost-cities"
+```

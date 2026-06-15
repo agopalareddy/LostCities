@@ -231,36 +231,6 @@
       </details>
     </div>
 
-    <!-- Mobile Bottom Sheet: Game Status (mirrors desktop sidebar control card) -->
-    <div class="status-sheet" id="status-sheet">
-      <div class="status-sheet-header" id="status-sheet-toggle">
-        <div class="status-sheet-handle" aria-hidden="true"></div>
-        <div class="status-sheet-summary">
-          <span class="status-sheet-summary-text" id="status-sheet-summary">Game Status</span>
-          <svg
-            class="status-sheet-toggle-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="18 15 12 9 6 15" />
-          </svg>
-        </div>
-      </div>
-      <div class="status-sheet-body">
-        <h2 id="action-heading-mobile">Game Status</h2>
-        <div class="action-box">
-          <div class="pulse-indicator" aria-hidden="true"></div>
-          <p id="action-instruction-mobile" aria-live="polite">Connecting to Lost Cities JVM...</p>
-          <div id="choice-buttons-mobile" class="choice-buttons"></div>
-        </div>
-      </div>
-    </div>
-
     <!-- Game Over Modal -->
     <dialog id="game-over-modal" class="game-over-modal">
       <div class="modal-card">
@@ -641,41 +611,6 @@
         passModal.close();
       });
 
-      // ─── Mobile bottom sheet: mirrors the desktop action panel ───
-      const statusSheet = document.getElementById('status-sheet');
-      const statusSheetToggle = document.getElementById('status-sheet-toggle');
-      const statusSheetSummary = document.getElementById('status-sheet-summary');
-
-      statusSheetToggle.addEventListener('click', () => {
-        statusSheet.classList.toggle('expanded');
-      });
-
-      const syncStatusSheet = () => {
-        const heading = document.getElementById('action-heading');
-        const instruction = document.getElementById('action-instruction');
-        const buttons = document.getElementById('choice-buttons');
-
-        document.getElementById('action-heading-mobile').textContent = heading.textContent;
-
-        const instructionMobile = document.getElementById('action-instruction-mobile');
-        instructionMobile.innerHTML = instruction.innerHTML;
-
-        const buttonsMobile = document.getElementById('choice-buttons-mobile');
-        buttonsMobile.innerHTML = '';
-        Array.from(buttons.children).forEach((child) => {
-          buttonsMobile.appendChild(child.cloneNode(true));
-        });
-        // Re-wire cloned buttons to forward clicks to the originals
-        Array.from(buttonsMobile.children).forEach((clone, idx) => {
-          const original = buttons.children[idx];
-          if (original) {
-            clone.addEventListener('click', () => original.click());
-          }
-        });
-
-        statusSheetSummary.textContent = `${heading.textContent}: ${instruction.textContent}`;
-      };
-
       const renderActionPanel = (state) => {
         const heading = document.getElementById('action-heading');
         const instruction = document.getElementById('action-instruction');
@@ -720,7 +655,6 @@
             state.p2Score !== undefined ? state.p2Score : '0';
           const modal = document.getElementById('game-over-modal');
           if (!modal.open) modal.showModal();
-          syncStatusSheet();
           return;
         }
 
@@ -728,7 +662,6 @@
           const opponentName = state.gameMode === 'ai' ? 'AI' : 'Player 2';
           heading.textContent = `${opponentName} Thinking`;
           instruction.textContent = `${opponentName} is executing its turn in the JVM...`;
-          syncStatusSheet();
           return;
         }
 
@@ -865,8 +798,6 @@
           buttonsContainer.appendChild(btnYes);
           buttonsContainer.appendChild(btnNo);
         }
-
-        syncStatusSheet();
       };
 
       socket.on('game-update', (data) => {

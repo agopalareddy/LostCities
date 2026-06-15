@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const { spawn, exec } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 
 const app = express();
@@ -11,18 +11,6 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 8082;
-
-console.log('Compiling Lost Cities Java files...');
-exec('javac *.java', { cwd: path.join(__dirname, 'LostCities') }, (error, stdout, stderr) => {
-  if (error) {
-    console.error(`Compilation error: ${error.message}`);
-    return;
-  }
-  if (stderr) {
-    console.error(`Compilation stderr: ${stderr}`);
-  }
-  console.log('Lost Cities Java compiled successfully.');
-});
 
 app.use(express.static(__dirname));
 

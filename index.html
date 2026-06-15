@@ -743,8 +743,8 @@
             heading.textContent = state.gameMode === 'ai' ? 'Your Turn' : `Play a Card`;
             instruction.innerHTML =
               state.gameMode === 'ai'
-                ? `👈 Click on a card in your Hand below to select it.`
-                : `👈 Click on a card in Player ${state.currentTurn}'s Hand below to select it.`;
+                ? `👈 Click on a card in your Hand to select it.`
+                : `👈 Click on a card in Player ${state.currentTurn}'s Hand to select it.`;
           } else {
             const activeHand = state.currentTurn === 1 ? state.player1Hand : state.player2Hand;
             const card = activeHand[selectedHandCardIdx];
@@ -790,11 +790,10 @@
             buttonsContainer.appendChild(btnDiscard);
             buttonsContainer.appendChild(btnCancel);
           }
-        } else if (state.prompt === 'PICK_CARD') {
           instruction.textContent =
             state.gameMode === 'ai'
-              ? `Click on one of the cards in your Hand below to play it.`
-              : `Click on one of the cards in Player ${state.currentTurn}'s Hand below to play it.`;
+              ? `Click on one of the cards in your Hand to play it.`
+              : `Click on one of the cards in Player ${state.currentTurn}'s Hand to play it.`;
         } else if (state.prompt === 'PICK_DRAW_OR_DISCARD') {
           heading.textContent = 'Draw a Card';
           instruction.innerHTML =

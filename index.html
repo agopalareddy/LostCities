@@ -288,6 +288,68 @@
         R: 'Red',
       };
 
+      const clearVisualHighlights = () => {
+        document
+          .querySelectorAll('.col-pile, .draw-deck')
+          .forEach((p) =>
+            p.classList.remove('highlight-place', 'highlight-discard', 'highlight-draw')
+          );
+        document
+          .querySelectorAll('#player-hand .game-card')
+          .forEach((c) => c.classList.remove('selected'));
+      };
+
+      const highlightActiveZones = (card) => {
+        document
+          .querySelectorAll('.col-pile, .draw-deck')
+          .forEach((p) =>
+            p.classList.remove('highlight-place', 'highlight-discard', 'highlight-draw')
+          );
+        if (!card) return;
+        const colorName = colorsMap[card.color];
+        if (!colorName) return;
+
+        const placePile = document.querySelector(
+          `#player-placed .col-pile.${colorName.toLowerCase()}`
+        );
+        if (placePile) {
+          placePile.classList.add('highlight-place');
+        }
+
+        const discardPile = document.querySelector(
+          `#discard-piles .col-pile.${colorName.toLowerCase()}`
+        );
+        if (discardPile) {
+          discardPile.classList.add('highlight-discard');
+        }
+      };
+
+      const highlightDrawZones = (state) => {
+        document
+          .querySelectorAll('.col-pile, .draw-deck')
+          .forEach((p) =>
+            p.classList.remove('highlight-place', 'highlight-discard', 'highlight-draw')
+          );
+        if (state.prompt !== 'PICK_DRAW_OR_DISCARD') return;
+
+        const drawDeck = document.querySelector('.draw-deck');
+        if (drawDeck) {
+          drawDeck.classList.add('highlight-draw');
+        }
+
+        const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
+        colors.forEach((col) => {
+          if (state.discards[col] && state.discards[col].length > 0) {
+            const discardPile = document.querySelector(
+              `#discard-piles .col-pile.${col.toLowerCase()}`
+            );
+            if (discardPile) {
+              discardPile.classList.add('highlight-draw');
+            }
+          }
+        });
+      };
+
       const createCardHTML = (card, index = null) => {
         const cardEl = document.createElement('div');
         const colorClass = colorsMap[card.color]?.toLowerCase() || 'yellow';
@@ -299,16 +361,29 @@
             if (gameState.prompt !== 'PICK_CARD' && gameState.prompt !== 'DISCARD_OR_PLACE') {
               return;
             }
-            document
-              .querySelectorAll('#player-hand .game-card')
-              .forEach((c) => c.classList.remove('selected'));
-            cardEl.classList.add('selected');
-            selectedHandCardIdx = index;
+            const isAlreadySelected = cardEl.classList.contains('selected');
+            clearVisualHighlights();
 
-            if (gameState.prompt === 'PICK_CARD') {
-              handleHandSelection(card, index);
-            } else if (gameState.prompt === 'DISCARD_OR_PLACE') {
+            if (isAlreadySelected) {
+              selectedHandCardIdx = null;
               renderActionPanel(gameState);
+            } else {
+              cardEl.classList.add('selected');
+              selectedHandCardIdx = index;
+              if (gameState.prompt === 'PICK_CARD') {
+                handleHandSelection(card, index);
+              } else if (gameState.prompt === 'DISCARD_OR_PLACE') {
+                highlightActiveZones(card);
+                renderActionPanel(gameState);
+              }
+            }
+          });
+
+          cardEl.addEventListener('dblclick', () => {
+            if (gameState.prompt === 'DISCARD_OR_PLACE') {
+              selectedHandCardIdx = index;
+              socket.emit('input', 'p');
+              clearVisualHighlights();
             }
           });
         }
@@ -335,6 +410,20 @@
           const cardEl = createCardHTML(card);
           pileEl.appendChild(cardEl);
         });
+      };
+
+      const renderDiscardPile = (pileEl, cardList) => {
+        pileEl.innerHTML = '';
+        if (!cardList || cardList.length === 0) {
+          const emptySlot = document.createElement('div');
+          emptySlot.className = 'empty-slot-placeholder';
+          emptySlot.textContent = pileEl.dataset.color.charAt(0);
+          pileEl.appendChild(emptySlot);
+          return;
+        }
+        const topCard = cardList[cardList.length - 1];
+        const cardEl = createCardHTML(topCard);
+        pileEl.appendChild(cardEl);
       };
 
       const renderHand = (handList) => {
@@ -447,91 +536,58 @@
         heading.textContent = 'Action Required';
 
         if (state.prompt === 'DISCARD_OR_PLACE') {
-          if (selectedHandCardIdx !== null && selectedAction !== null) {
+          if (selectedHandCardIdx === null) {
+            heading.textContent = 'Play a Card';
+            instruction.innerHTML = '👈 Click on a card in your hand below to select it.';
+          } else {
             const card = state.playerHand[selectedHandCardIdx];
             const cardName = `${colorsMap[card.color]} ${card.val === 0 ? 'Multi' : card.val}`;
-            const actionName = selectedAction === 'p' ? 'Place on Expedition' : 'Discard to Trash';
-
-            heading.textContent = 'Confirm Play';
-            instruction.innerHTML = `You have selected:<br><br>Card: <strong style="color: var(--accent);">${cardName}</strong><br>Action: <strong style="color: #dc2626;">${actionName}</strong><br><br>Ready to commit this expedition step?`;
-
-            const btnConfirm = document.createElement('button');
-            btnConfirm.className = 'btn btn-primary';
-            btnConfirm.textContent = 'Confirm Play';
-            btnConfirm.addEventListener('click', () => {
-              const act = selectedAction;
-              selectedAction = null;
-              socket.emit('input', act);
-            });
-
-            const btnCancel = document.createElement('button');
-            btnCancel.className = 'btn btn-secondary';
-            btnCancel.textContent = 'Cancel';
-            btnCancel.addEventListener('click', () => {
-              selectedAction = null;
-              selectedHandCardIdx = null;
-              document
-                .querySelectorAll('#player-hand .game-card')
-                .forEach((c) => c.classList.remove('selected'));
-              renderActionPanel(state);
-            });
-
-            buttonsContainer.appendChild(btnConfirm);
-            buttonsContainer.appendChild(btnCancel);
-          } else {
-            instruction.textContent =
-              'Choose to either Discard card in trash pile, or Place on Expedition line:';
+            heading.textContent = 'Select Target';
+            instruction.innerHTML = `You selected <strong>${cardName}</strong>.<br><br>👉 Click the green-glowing slot on the board to <strong>Place</strong> it, or the orange-glowing slot to <strong>Discard</strong> it.`;
 
             const btnPlace = document.createElement('button');
             btnPlace.className = 'btn btn-primary';
             btnPlace.textContent = 'Place Card';
             btnPlace.addEventListener('click', () => {
-              selectedAction = 'p';
-              renderActionPanel(state);
+              socket.emit('input', 'p');
             });
 
             const btnDiscard = document.createElement('button');
             btnDiscard.className = 'btn btn-secondary';
             btnDiscard.textContent = 'Discard Card';
             btnDiscard.addEventListener('click', () => {
-              selectedAction = 'd';
+              socket.emit('input', 'd');
+            });
+
+            const btnCancel = document.createElement('button');
+            btnCancel.className = 'btn btn-secondary';
+            btnCancel.textContent = 'Cancel';
+            btnCancel.addEventListener('click', () => {
+              selectedHandCardIdx = null;
+              clearVisualHighlights();
               renderActionPanel(state);
             });
 
             buttonsContainer.appendChild(btnPlace);
             buttonsContainer.appendChild(btnDiscard);
-
-            if (selectedAction !== null && selectedHandCardIdx === null) {
-              const actionName = selectedAction === 'p' ? 'Place' : 'Discard';
-              instruction.innerHTML = `You chose to <strong>${actionName}</strong>.<br><br><span style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">👉 Now click on a card in your hand below to confirm.</span>`;
-            } else if (selectedAction === null && selectedHandCardIdx !== null) {
-              const card = state.playerHand[selectedHandCardIdx];
-              const cardName = `${colorsMap[card.color]} ${card.val === 0 ? 'Multi' : card.val}`;
-              instruction.innerHTML = `Selected card: <strong>${cardName}</strong>.<br><br><span style="color: var(--text-muted); font-size: 0.9rem; font-style: italic;">👉 Now click "Place Card" or "Discard Card" to confirm.</span>`;
-            }
+            buttonsContainer.appendChild(btnCancel);
           }
         } else if (state.prompt === 'PICK_CARD') {
           instruction.textContent = 'Click on one of the cards in your Hand below to play it.';
         } else if (state.prompt === 'PICK_DRAW_OR_DISCARD') {
           heading.textContent = 'Draw a Card';
-
-          const availableDiscards = ['Yellow', 'Blue', 'White', 'Green', 'Red'].filter(
-            (col) => state.discards[col] && state.discards[col].length > 0
-          );
-
-          if (availableDiscards.length > 0) {
-            instruction.innerHTML =
-              'Draw from the <strong>deck</strong> — or pick the <strong>top card</strong> from any discard pile below:';
-          } else {
-            instruction.innerHTML =
-              'All discard piles are empty. Draw from the <strong>deck</strong>.';
-          }
+          instruction.innerHTML =
+            '👉 Click the pulsing <strong>DECK</strong> to draw a new card, or click any highlighted <strong>discard pile</strong> to take the top card.';
 
           const btnDraw = document.createElement('button');
           btnDraw.className = 'btn btn-primary';
           btnDraw.textContent = '🃏 Draw from Deck';
           btnDraw.addEventListener('click', () => socket.emit('input', 'u'));
           buttonsContainer.appendChild(btnDraw);
+
+          const availableDiscards = ['Yellow', 'Blue', 'White', 'Green', 'Red'].filter(
+            (col) => state.discards[col] && state.discards[col].length > 0
+          );
 
           if (availableDiscards.length > 0) {
             const divider = document.createElement('div');
@@ -553,7 +609,8 @@
             });
           }
         } else if (state.prompt === 'PICK_DISCARD_COLOR') {
-          instruction.textContent = 'Choose which color discard pile to draw from:';
+          heading.textContent = 'Select Discard Color';
+          instruction.textContent = 'Choose which discard pile to draw from:';
           const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
           colors.forEach((col) => {
             if (state.discards[col] && state.discards[col].length > 0) {
@@ -567,6 +624,7 @@
             }
           });
         } else if (state.prompt === 'PLAY_AGAIN') {
+          heading.textContent = 'New Game?';
           instruction.textContent = 'Do you wish to start a new Lost Cities game?';
           const btnYes = document.createElement('button');
           btnYes.className = 'btn btn-primary';
@@ -578,7 +636,7 @@
           });
           const btnNo = document.createElement('button');
           btnNo.className = 'btn btn-secondary';
-          btnNo.textContent = 'No';
+          btnNo.textContent = 'No, Exit';
           btnNo.addEventListener('click', () => socket.emit('input', 'n'));
 
           buttonsContainer.appendChild(btnYes);
@@ -614,6 +672,14 @@
           document.getElementById('deck-size').textContent = data.drawPileSize;
         }
 
+        // Clear visual highlights first
+        clearVisualHighlights();
+
+        // Highlight draw zones if prompt is PICK_DRAW_OR_DISCARD
+        if (gameState.prompt === 'PICK_DRAW_OR_DISCARD') {
+          highlightDrawZones(gameState);
+        }
+
         const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
         colors.forEach((col) => {
           renderPile(
@@ -624,7 +690,7 @@
             document.querySelector(`#opponent-placed .col-pile.${col.toLowerCase()}`),
             data.p2Placed[col]
           );
-          renderPile(
+          renderDiscardPile(
             document.querySelector(`#discard-piles .col-pile.${col.toLowerCase()}`),
             data.discards[col]
           );
@@ -648,6 +714,43 @@
           const rect = card.getBoundingClientRect();
           card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
           card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+        }
+      });
+
+      // ── Interactive Drop/Draw Zones Click Delegation ──
+      document.addEventListener('click', (e) => {
+        // 1. Click on place highlight zone
+        const placePile = e.target.closest('.col-pile.highlight-place');
+        if (placePile && selectedHandCardIdx !== null) {
+          socket.emit('input', 'p');
+          clearVisualHighlights();
+          return;
+        }
+
+        // 2. Click on discard highlight zone
+        const discardPile = e.target.closest('.col-pile.highlight-discard');
+        if (discardPile && selectedHandCardIdx !== null) {
+          socket.emit('input', 'd');
+          clearVisualHighlights();
+          return;
+        }
+
+        // 3. Click on draw deck when active
+        const drawDeck = e.target.closest('.draw-deck.highlight-draw');
+        if (drawDeck && gameState.prompt === 'PICK_DRAW_OR_DISCARD') {
+          socket.emit('input', 'u');
+          clearVisualHighlights();
+          return;
+        }
+
+        // 4. Click on discard pile to draw when active
+        const drawDiscard = e.target.closest('#discard-piles .col-pile.highlight-draw');
+        if (drawDiscard && gameState.prompt === 'PICK_DRAW_OR_DISCARD') {
+          const colCode = drawDiscard.dataset.code;
+          socket.emit('input', 'd');
+          setTimeout(() => socket.emit('input', colCode), 80);
+          clearVisualHighlights();
+          return;
         }
       });
     </script>

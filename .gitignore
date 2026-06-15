@@ -26,3 +26,6 @@ replay_pid*
 # Node.js web wrapper
 node_modules/
 package-lock.json
+
+# Playwright snapshots
+.playwright-cli/

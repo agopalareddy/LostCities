@@ -614,13 +614,129 @@
 
   .empty-slot-placeholder {
     color: var(--text-muted);
-    font-size: 1.5rem;
+    font-size: 2rem;
+    font-family: var(--font-heading);
     font-weight: 700;
-    opacity: 0.25;
+    opacity: 0.15;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+    transition: opacity var(--transition);
+  }
+
+  .col-pile:hover .empty-slot-placeholder {
+    opacity: 0.35;
+  }
+
+  /* Empty slot color accents */
+  .col-pile.yellow {
+    border-color: rgba(180, 83, 9, 0.2);
+    background-color: rgba(254, 243, 199, 0.15);
+  }
+  .col-pile.blue {
+    border-color: rgba(29, 78, 216, 0.2);
+    background-color: rgba(219, 234, 254, 0.15);
+  }
+  .col-pile.white {
+    border-color: rgba(71, 85, 105, 0.2);
+    background-color: rgba(241, 245, 249, 0.15);
+  }
+  .col-pile.green {
+    border-color: rgba(4, 120, 87, 0.2);
+    background-color: rgba(209, 250, 229, 0.15);
+  }
+  .col-pile.red {
+    border-color: rgba(185, 28, 28, 0.2);
+    background-color: rgba(254, 226, 226, 0.15);
+  }
+
+  /* Dark mode overrides for empty slot colors */
+  :root[data-resolved-theme='dark'] .col-pile.yellow,
+  :root.theme-dark .col-pile.yellow {
+    border-color: rgba(245, 158, 11, 0.15);
+    background-color: rgba(69, 26, 3, 0.1);
+  }
+  :root[data-resolved-theme='dark'] .col-pile.blue,
+  :root.theme-dark .col-pile.blue {
+    border-color: rgba(59, 130, 246, 0.15);
+    background-color: rgba(23, 37, 84, 0.1);
+  }
+  :root[data-resolved-theme='dark'] .col-pile.white,
+  :root.theme-dark .col-pile.white {
+    border-color: rgba(226, 232, 240, 0.15);
+    background-color: rgba(15, 23, 42, 0.15);
+  }
+  :root[data-resolved-theme='dark'] .col-pile.green,
+  :root.theme-dark .col-pile.green {
+    border-color: rgba(16, 185, 129, 0.15);
+    background-color: rgba(2, 44, 34, 0.1);
+  }
+  :root[data-resolved-theme='dark'] .col-pile.red,
+  :root.theme-dark .col-pile.red {
+    border-color: rgba(239, 68, 68, 0.15);
+    background-color: rgba(69, 10, 10, 0.1);
+  }
+
+  /* Pulsing Highlight States for drop zones and drawing zones */
+  .col-pile.highlight-place {
+    border: 2px dashed #10b981 !important; /* Vibrant Emerald Green */
+    background: rgba(16, 185, 129, 0.1) !important;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+    animation: pulse-place 1.5s infinite ease-in-out;
+  }
+
+  .col-pile.highlight-discard {
+    border: 2px dashed #f59e0b !important; /* Orange / Yellow */
+    background: rgba(245, 158, 11, 0.1) !important;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+    animation: pulse-discard 1.5s infinite ease-in-out;
+  }
+
+  .col-pile.highlight-draw,
+  .card-back.draw-deck.highlight-draw {
+    border: 2px dashed var(--accent) !important;
+    background: var(--accent-soft) !important;
+    cursor: pointer;
+    animation: pulse-draw 1.5s infinite ease-in-out;
+  }
+
+  @keyframes pulse-place {
+    0% {
+      box-shadow: 0 0 4px rgba(16, 185, 129, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+    }
+    100% {
+      box-shadow: 0 0 4px rgba(16, 185, 129, 0.2);
+    }
+  }
+
+  @keyframes pulse-discard {
+    0% {
+      box-shadow: 0 0 4px rgba(245, 158, 11, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+    }
+    100% {
+      box-shadow: 0 0 4px rgba(245, 158, 11, 0.2);
+    }
+  }
+
+  @keyframes pulse-draw {
+    0% {
+      box-shadow: 0 0 4px rgba(30, 58, 138, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 18px rgba(30, 58, 138, 0.6);
+    }
+    100% {
+      box-shadow: 0 0 4px rgba(30, 58, 138, 0.2);
+    }
   }
 
   /* Central Discards Board */

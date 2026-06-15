@@ -757,8 +757,8 @@
   }
 
   .card-back {
-    width: clamp(58px, 9vw, 76px);
-    height: clamp(82px, 12.8vw, 108px);
+    width: clamp(68px, 10vw, 84px);
+    height: clamp(92px, 13.5vw, 116px);
     border-radius: var(--radius-sm);
     background: var(--accent);
     border: 1px solid var(--accent);
@@ -791,8 +791,8 @@
 
   /* Game Expeditions Cards Visual Grid */
   .game-card {
-    width: clamp(58px, 9vw, 76px);
-    height: clamp(82px, 12.8vw, 108px);
+    width: clamp(68px, 10vw, 84px);
+    height: clamp(92px, 13.5vw, 116px);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     display: flex;
@@ -852,6 +852,7 @@
     font-weight: 700;
     text-align: center;
     align-self: center;
+    white-space: nowrap;
   }
 
   /* Sidebar controls card */
@@ -894,6 +895,11 @@
     overflow-x: auto;
     padding: 8px 0;
     min-height: 125px;
+  }
+
+  .hand-grid .game-card,
+  .hand-grid .card-back-small {
+    flex: 0 0 auto;
   }
 
   .hand-grid::-webkit-scrollbar {
@@ -1265,9 +1271,10 @@
     }
 
     .card-back,
+    .card-back-small,
     .game-card {
-      width: clamp(46px, 14vw, 64px);
-      height: clamp(66px, 20vw, 92px);
+      width: clamp(52px, 14vw, 68px);
+      height: clamp(72px, 19vw, 94px);
     }
 
     .colors-grid .col-pile .game-card {
@@ -1290,9 +1297,10 @@
     }
 
     .card-back,
+    .card-back-small,
     .game-card {
-      width: clamp(38px, 16vw, 54px);
-      height: clamp(54px, 23vw, 78px);
+      width: clamp(44px, 16vw, 58px);
+      height: clamp(60px, 22vw, 80px);
     }
 
     .colors-grid .col-pile .game-card {
@@ -1362,8 +1370,8 @@
   }
 
   .card-back-small {
-    width: clamp(58px, 9vw, 76px);
-    height: clamp(82px, 12.8vw, 108px);
+    width: clamp(68px, 10vw, 84px);
+    height: clamp(92px, 13.5vw, 116px);
     border-radius: var(--radius-sm);
     background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
     border: 1px solid var(--border-color);

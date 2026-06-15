@@ -115,10 +115,12 @@ public class MinimaxAi extends Ai {
             System.out.print("Minimax AI placed "); bestOut.display();
             removeCard(bestOut);
             placeCard(bestOut);
+            lastDiscardedCard = null;
         } else {
             System.out.print("Minimax AI discarded "); bestOut.display();
             removeCard(bestOut);
             discards.addCard(bestOut);
+            lastDiscardedCard = bestOut;
         }
 
         // ── Execute best incoming ──────────────────────────────────────────────
@@ -154,6 +156,10 @@ public class MinimaxAi extends Ai {
             Card top = discards.getTopCard(col);
             if (top.getCardColor() == Color.black) continue; // empty pile sentinel
             if (top == exclude) continue;                    // just-discarded card
+            if (lastDiscardedCard != null && top.getCardColor() == lastDiscardedCard.getCardColor()
+                    && top.getCardNumber() == lastDiscardedCard.getCardNumber()) {
+                continue; // prevent loops
+            }
             opts.add(top);
         }
         return opts;

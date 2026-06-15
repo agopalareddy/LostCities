@@ -90,12 +90,14 @@ public class Ai extends Player {
             outgoing_card.display();
             removeCard(outgoing_card);
             discards.addCard(outgoing_card);
+            lastDiscardedCard = outgoing_card;
         } else {
             outgoing_card = hand.getCardAt(placing_max_index);
             System.out.print("AI placed ");
             outgoing_card.display();
             removeCard(outgoing_card);
             placeCard(outgoing_card);
+            lastDiscardedCard = null;
         }
         return outgoing_card;
     }
@@ -137,6 +139,10 @@ public class Ai extends Player {
             Card top = discards.getTopCard(col);
             if (top.getCardColor() == Color.black) continue; // empty pile sentinel
             if (top == outCard) continue;                    // can't re-take just-discarded
+            if (lastDiscardedCard != null && top.getCardColor() == lastDiscardedCard.getCardColor()
+                    && top.getCardNumber() == lastDiscardedCard.getCardNumber()) {
+                continue; // prevent loops
+            }
 
             hand.addCard(top);
             double val = evalPosition(opponentPlaced, discards, undealt);
@@ -183,6 +189,19 @@ public class Ai extends Player {
 
         ArrayList<CardsCollection> potential =
                 makePotentialPlacedCards(hand, placed_down, opponentPlaced, undealt);
+
+        // Add back the playable cards in our hand to the potential pile so they are valued correctly
+        for (int i = 0; i < hand.size(); i++) {
+            Card c = hand.getCardAt(i);
+            int idx = getColorIndex(c.getCardColor());
+            CardsCollection ourPlaced = placed_down.get(idx);
+            double topVal = ourPlaced.isEmpty() ? -1 : ourPlaced.getTopCard().getCardNumber();
+            if (c.getCardNumber() >= topVal) {
+                Card copy = new Card((int) c.getCardNumber(), c.getCardColor());
+                potential.get(idx).addCard(copy);
+            }
+        }
+
         double ourScore = 0;
         for (Color col : colors) {
             ourScore += potential.get(getColorIndex(col)).getScore(20 * perc);

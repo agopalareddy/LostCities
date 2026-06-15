@@ -17,6 +17,7 @@ public abstract class Player {
 
     protected CardsCollection hand;
     protected ArrayList<CardsCollection> placed_down;
+    protected Card lastDiscardedCard = null;
 
     /* CONSTRUCTORS */
 
@@ -28,6 +29,7 @@ public abstract class Player {
             placed_down.add(new CardsCollection());
         }
         in = new Scanner(System.in);
+        lastDiscardedCard = null;
     }
 
     /* ABSTRACT DEFINITIONS */

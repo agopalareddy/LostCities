@@ -206,13 +206,13 @@
             <input
               type="range"
               id="speed-slider"
-              min="100"
-              max="2000"
-              value="800"
-              step="100"
+              min="1"
+              max="10"
+              value="3"
+              step="1"
               style="width: 120px"
             />
-            <span id="speed-label">0.8s/turn</span>
+            <span id="speed-label">1.00s/turn</span>
           </div>
         </div>
       </div>
@@ -385,7 +385,8 @@
       // ── AI-vs-AI playback state ─────────────────────────────────────────────
       let playbackMode = 'manual'; // 'manual' or 'auto'
       let autoPlayInterval = null;
-      let autoPlaySpeed = 800; // ms between steps
+      const speedMap = [2000, 1500, 1000, 800, 600, 450, 300, 150, 80, 40];
+      let autoPlaySpeed = 1000; // ms between steps (defaults to index 2 / value 3)
       let stepQueueSize = 0;
       // ────────────────────────────────────────────────────────────────────────
 
@@ -526,8 +527,9 @@
       const speedSlider = document.getElementById('speed-slider');
       const speedLabel = document.getElementById('speed-label');
       speedSlider.addEventListener('input', () => {
-        autoPlaySpeed = parseInt(speedSlider.value);
-        speedLabel.textContent = (autoPlaySpeed / 1000).toFixed(1) + 's/turn';
+        const val = parseInt(speedSlider.value);
+        autoPlaySpeed = speedMap[val - 1];
+        speedLabel.textContent = (autoPlaySpeed / 1000).toFixed(2) + 's/turn';
         if (playbackMode === 'auto' && autoPlayInterval) {
           clearInterval(autoPlayInterval);
           startAutoPlay();

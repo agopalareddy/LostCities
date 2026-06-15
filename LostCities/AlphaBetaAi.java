@@ -118,10 +118,12 @@ public class AlphaBetaAi extends MinimaxAi {
             System.out.print("Alpha-Beta AI placed "); bestOut.display();
             removeCard(bestOut);
             placeCard(bestOut);
+            lastDiscardedCard = null;
         } else {
             System.out.print("Alpha-Beta AI discarded "); bestOut.display();
             removeCard(bestOut);
             discards.addCard(bestOut);
+            lastDiscardedCard = bestOut;
         }
 
         // ── Execute best incoming ────────────────────────────────────────────

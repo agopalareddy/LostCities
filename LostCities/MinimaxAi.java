@@ -69,10 +69,7 @@ public class MinimaxAi extends Ai {
 
                 // Enumerate incoming options (discard piles unchanged; no exclude).
                 for (Card in : getDrawOptions(discards, undealt, null)) {
-                    Card actual = (in == null) ? undealt.getTopCard() : in;
-                    hand.addCard(actual);
-                    double val = evalPosition(opponentPlaced, discards, undealt);
-                    hand.removeCard(actual);
+                    double val = evalAfterDraw(in, opponentPlaced, discards, undealt);
 
                     if (val > bestVal) {
                         bestVal = val; bestOut = out; bestPlace = true;
@@ -93,10 +90,7 @@ public class MinimaxAi extends Ai {
 
                 // Enumerate incoming options (out is now top of its colour; excluded).
                 for (Card in : getDrawOptions(discards, undealt, out)) {
-                    Card actual = (in == null) ? undealt.getTopCard() : in;
-                    hand.addCard(actual);
-                    double val = evalPosition(opponentPlaced, discards, undealt);
-                    hand.removeCard(actual);
+                    double val = evalAfterDraw(in, opponentPlaced, discards, undealt);
 
                     if (val > bestVal) {
                         bestVal = val; bestOut = out; bestPlace = false;
@@ -152,6 +146,7 @@ public class MinimaxAi extends Ai {
             CardsCollection undealt, Card exclude) {
         java.util.List<Card> opts = new ArrayList<>();
         if (!undealt.isEmpty()) opts.add(null); // null = deck
+        if (undealt.size() <= 1) return opts; // ponytail: force game progress at the end; relax if cycle detection is added.
         for (Color col : colors) {
             Card top = discards.getTopCard(col);
             if (top.getCardColor() == Color.black) continue; // empty pile sentinel
@@ -163,6 +158,27 @@ public class MinimaxAi extends Ai {
             opts.add(top);
         }
         return opts;
+    }
+
+    protected double evalAfterDraw(Card drawOption, ArrayList<CardsCollection> opponentPlaced,
+            DiscardPiles discards, CardsCollection undealt) {
+        Card actual = (drawOption == null) ? undealt.getTopCard() : drawOption;
+        if (drawOption == null) {
+            undealt.removeCard(actual);
+        } else {
+            discards.removeCard(actual);
+        }
+
+        hand.addCard(actual);
+        double val = evalPosition(opponentPlaced, discards, undealt);
+        hand.removeCard(actual);
+
+        if (drawOption == null) {
+            undealt.addCard(actual);
+        } else {
+            discards.addCard(actual);
+        }
+        return val;
     }
 
     /**

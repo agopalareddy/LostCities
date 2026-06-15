@@ -110,8 +110,8 @@ public class Ai extends Player {
     protected Card bestIncomingCard(ArrayList<CardsCollection> opponentPlaced,
             DiscardPiles discards, CardsCollection undealt, Card outCard) {
 
-        if (discards.isEmpty()) {
-            System.out.println("\nAI took from draw pile (no discards available).");
+        if (discards.isEmpty() || undealt.size() <= 1) {
+            System.out.println("\nAI took from draw pile.");
             Card c = undealt.getTopCard();
             undealt.removeCard(c);
             return c;
@@ -183,39 +183,58 @@ public class Ai extends Player {
     protected double evalPosition(ArrayList<CardsCollection> opponentPlaced,
             DiscardPiles discards, CardsCollection undealt) {
 
-        double perc = undealt.size() > 0
-                ? (((double) undealt.size() + 8) / 2) / undealt.size()
-                : 1.0;
-
-        ArrayList<CardsCollection> potential =
-                makePotentialPlacedCards(hand, placed_down, opponentPlaced, undealt);
-
-        // Add back the playable cards in our hand to the potential pile so they are valued correctly
-        for (int i = 0; i < hand.size(); i++) {
-            Card c = hand.getCardAt(i);
-            int idx = getColorIndex(c.getCardColor());
-            CardsCollection ourPlaced = placed_down.get(idx);
-            double topVal = ourPlaced.isEmpty() ? -1 : ourPlaced.getTopCard().getCardNumber();
-            if (c.getCardNumber() >= topVal) {
-                Card copy = new Card((int) c.getCardNumber(), c.getCardColor());
-                potential.get(idx).addCard(copy);
-            }
-        }
-
-        double ourScore = 0;
-        for (Color col : colors) {
-            ourScore += potential.get(getColorIndex(col)).getScore(20 * perc);
-        }
-
-        double oppPerc = undealt.size() > 0
-                ? (((double) undealt.size() + 16) / 2) / undealt.size()
-                : 1.0;
+        double ourScore = evaluateKnownPosition(placed_down, hand);
         double oppScore = 0;
         for (CardsCollection pile : opponentPlaced) {
-            oppScore += pile.getScore(20 * oppPerc);
+            oppScore += pile.getScore();
         }
 
         return ourScore - oppScore;
+    }
+
+    protected double evaluateKnownPosition(ArrayList<CardsCollection> placed, CardsCollection availableHand) {
+        double total = 0;
+        for (Color col : colors) {
+            int idx = getColorIndex(col);
+            CardsCollection options = availableHand.getCardsbyColor(col);
+            total += bestKnownColorScore(placed.get(idx), options);
+        }
+        return total;
+    }
+
+    private double bestKnownColorScore(CardsCollection placed, CardsCollection options) {
+        int count = options.size();
+        double best = placed.isEmpty() ? 0 : placed.getScore();
+
+        for (int mask = 1; mask < (1 << count); mask++) {
+            CardsCollection candidate = copyCards(placed);
+            boolean legal = true;
+
+            for (int i = 0; i < count; i++) {
+                if ((mask & (1 << i)) == 0) continue;
+
+                Card card = options.getCardAt(i);
+                if (!candidate.isEmpty() && card.getCardNumber() < candidate.getTopCard().getCardNumber()) {
+                    legal = false;
+                    break;
+                }
+                candidate.addCard(new Card((int) card.getCardNumber(), card.getCardColor()));
+            }
+
+            if (legal) {
+                best = Math.max(best, candidate.getScore());
+            }
+        }
+        return best;
+    }
+
+    private CardsCollection copyCards(CardsCollection source) {
+        CardsCollection copy = new CardsCollection();
+        for (int i = 0; i < source.size(); i++) {
+            Card card = source.getCardAt(i);
+            copy.addCard(new Card((int) card.getCardNumber(), card.getCardColor()));
+        }
+        return copy;
     }
 
     /*
@@ -246,7 +265,7 @@ public class Ai extends Player {
                             || c.getCardNumber() < getTopPlacedCard(colors[i]).getCardNumber()) {
                         j--;
                     } else if (!player_placed_down.get(i).contains(c)) {
-                        double perc = (((double) undealt.size() + 8) / 2) / ((double) undealt.size());
+                        double perc = futureCardScale(undealt, 8);
                         c.setCardNumber(c.getCardNumber() * perc);
                         potential_placed_cards.get(i).addCard(c);
                     } else {
@@ -259,7 +278,7 @@ public class Ai extends Player {
                                     && c.getCardNumber() < player_placed_down.get(i).getTopCard().getCardNumber())) {
                         j--;
                     } else if (!player_placed_down.get(i).contains(c)) {
-                        double perc = (((double) undealt.size() + 16) / 2) / ((double) undealt.size());
+                        double perc = futureCardScale(undealt, 16);
                         c.setCardNumber(c.getCardNumber() * perc);
                         potential_placed_cards.get(i).addCard(c);
                     } else {
@@ -291,7 +310,7 @@ public class Ai extends Player {
 
             // Score for discarding card c.
             double total = 0;
-            double perc = (((double) undealt.size() + 8) / 2) / ((double) undealt.size());
+            double perc = futureCardScale(undealt, 8);
             c2.setCardNumber(c2.getCardNumber() * perc);
             potential_placed_cards.get(getColorIndex(c2.getCardColor())).addCard(c2);
             for (Color col : colors) {
@@ -318,5 +337,10 @@ public class Ai extends Player {
             expected_scores.get(1).add(total);
         }
         return expected_scores;
+    }
+
+    protected double futureCardScale(CardsCollection undealt, double knownCards) {
+        if (undealt.isEmpty()) return 1.0;
+        return (((double) undealt.size() + knownCards) / 2) / undealt.size();
     }
 }

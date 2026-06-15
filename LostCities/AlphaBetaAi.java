@@ -63,13 +63,7 @@ public class AlphaBetaAi extends MinimaxAi {
                 placed_down.get(cidx).addCard(out);
 
                 for (Card in : getDrawOptions(discards, undealt, null)) {
-                    Card actual = (in == null) ? undealt.getTopCard() : in;
-                    hand.addCard(actual);
-
-                    // 2-ply: after our (place, draw), apply opponent's best draw.
-                    double val = evalWithOpponentResponse(opponentPlaced, discards, undealt, alpha, beta);
-
-                    hand.removeCard(actual);
+                    double val = evalAfterDrawWithOpponent(in, opponentPlaced, discards, undealt, alpha, beta);
 
                     if (val > bestVal) {
                         bestVal = val; bestOut = out; bestPlace = true;
@@ -91,12 +85,7 @@ public class AlphaBetaAi extends MinimaxAi {
                 discards.addCard(out);
 
                 for (Card in : getDrawOptions(discards, undealt, out)) {
-                    Card actual = (in == null) ? undealt.getTopCard() : in;
-                    hand.addCard(actual);
-
-                    double val = evalWithOpponentResponse(opponentPlaced, discards, undealt, alpha, beta);
-
-                    hand.removeCard(actual);
+                    double val = evalAfterDrawWithOpponent(in, opponentPlaced, discards, undealt, alpha, beta);
 
                     if (val > bestVal) {
                         bestVal = val; bestOut = out; bestPlace = false;
@@ -137,6 +126,27 @@ public class AlphaBetaAi extends MinimaxAi {
             System.out.print("Alpha-Beta AI drew from discard. ");
             addCard(bestIn);
         }
+    }
+
+    private double evalAfterDrawWithOpponent(Card drawOption, ArrayList<CardsCollection> opponentPlaced,
+            DiscardPiles discards, CardsCollection undealt, double alpha, double beta) {
+        Card actual = (drawOption == null) ? undealt.getTopCard() : drawOption;
+        if (drawOption == null) {
+            undealt.removeCard(actual);
+        } else {
+            discards.removeCard(actual);
+        }
+
+        hand.addCard(actual);
+        double val = evalWithOpponentResponse(opponentPlaced, discards, undealt, alpha, beta);
+        hand.removeCard(actual);
+
+        if (drawOption == null) {
+            undealt.addCard(actual);
+        } else {
+            discards.addCard(actual);
+        }
+        return val;
     }
 
     /**

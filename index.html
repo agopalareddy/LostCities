@@ -463,6 +463,9 @@
           p1Type: p1AiType,
           p2Type: p2AiType,
         });
+        if (activeMode === 'ai-vs-ai') {
+          setPlaybackMode(playbackMode);
+        }
       };
 
       updateModeUI();
@@ -473,6 +476,9 @@
         btn.addEventListener('click', () => {
           activeMode = btn.dataset.mode;
           updateModeUI();
+          if (activeMode === 'ai-vs-ai') {
+            playbackMode = 'manual';
+          }
           startNewGame();
         });
       });

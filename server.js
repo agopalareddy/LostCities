@@ -208,7 +208,8 @@ io.on('connection', (socket) => {
   let aiVsAiMode = false;
   let stepQueue = []; // Array of raw stdout snapshots (one per [TURN_DONE])
   let pendingChunk = ''; // Accumulates raw stdout between [TURN_DONE] markers
-  let stepPaused = false; // Whether we're waiting for next-step signal
+  let stepPaused = true; // Start paused / buffering by default in AI-vs-AI mode
+  let hasReleasedFirstStep = false; // Tracks if the initial deal/first turn has been sent
   // ─────────────────────────────────────────────────────────────────────────────
 
   /** Merge new parse results into currentState, only updating non-empty/changed fields. */
@@ -282,7 +283,8 @@ io.on('connection', (socket) => {
     // Reset step buffers
     stepQueue = [];
     pendingChunk = '';
-    stepPaused = false;
+    stepPaused = true;
+    hasReleasedFirstStep = false;
 
     const seedOption = shuffle === 'fixed' ? 'fixed' : 'random';
     aiVsAiMode = mode === 'ai-vs-ai';
@@ -368,6 +370,12 @@ io.on('connection', (socket) => {
           pendingChunk = '';
         }
 
+        // If we haven't released the first step yet, do it automatically so the board renders
+        if (!hasReleasedFirstStep && stepQueue.length > 0) {
+          emitStep(stepQueue.shift());
+          hasReleasedFirstStep = true;
+        }
+
         socket.emit('step-queue-size', stepQueue.length);
 
         // If not paused, release immediately (first turn or auto-play)
@@ -425,14 +433,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('set-auto-play', (enabled) => {
-    stepPaused = !enabled;
-    if (enabled && stepQueue.length > 0) {
-      // Drain all buffered steps immediately when switching to auto
-      while (stepQueue.length > 0) {
-        emitStep(stepQueue.shift());
-      }
-      socket.emit('step-queue-size', 0);
-    }
+    // No-op: client manages pacing and pulls steps via 'next-step'
   });
   // ─────────────────────────────────────────────────────────────────────────────
 

@@ -7,13 +7,17 @@ public class LostCities {
 
         String p1Type = "human";
         String p2Type = "ai";
+        String seedOption = "random";
         if (args.length >= 2) {
             p1Type = args[0].toLowerCase();
             p2Type = args[1].toLowerCase();
         }
+        if (args.length >= 3) {
+            seedOption = args[2].toLowerCase();
+        }
 
         while (true) {
-            GameManager gm = new GameManager(p1Type, p2Type);
+            GameManager gm = new GameManager(p1Type, p2Type, seedOption);
             gm.dealCards();
             gm.playGame();
 

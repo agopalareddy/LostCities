@@ -131,6 +131,9 @@
         <button id="btn-switch-mode" class="btn btn-primary">
           <i class="fa-solid fa-robot"></i> Mode: vs AI
         </button>
+        <button id="btn-switch-seed" class="btn btn-secondary">
+          <i class="fa-solid fa-shuffle"></i> Shuffle: Random
+        </button>
       </div>
 
       <main class="game-board-layout">
@@ -264,8 +267,12 @@
         <h2>Match Completed!</h2>
         <p id="winner-text" class="winner-announcement">Calculating final expedition scores...</p>
         <div class="scores-display" id="scores-display">
-          <div class="score-line score-human">Your Score: <span id="p1-score-val">0</span> pts</div>
-          <div class="score-line score-ai">AI Score: <span id="p2-score-val">0</span> pts</div>
+          <div class="score-line score-human">
+            <span id="lbl-p1-score">Your Score</span>: <span id="p1-score-val">0</span> pts
+          </div>
+          <div class="score-line score-ai">
+            <span id="lbl-p2-score">AI Score</span>: <span id="p2-score-val">0</span> pts
+          </div>
         </div>
         <div class="modal-actions">
           <button id="btn-restart" class="btn btn-primary">Start Expedition Again</button>
@@ -311,16 +318,20 @@
         isGameOver: false,
         winnerText: null,
         gameMode: 'ai',
+        shuffleMode: 'random',
       };
 
       let selectedHandCardIdx = null;
       let selectedAction = null; // 'p' (Place) or 'd' (Discard)
       let activeMode = 'ai'; // 'ai' or 'human'
+      let activeShuffle = 'random'; // 'random' or 'fixed'
       let p2HandVisible = false;
       let lastTurn = null;
 
       // Start lost cities engine
-      socket.emit('start-game', activeMode);
+      socket.emit('start-game', activeMode, activeShuffle);
+      updateModeUI();
+      updateShuffleUI();
 
       const colorsMap = {
         Y: 'Yellow',
@@ -341,20 +352,40 @@
         }
       };
 
+      const updateShuffleUI = () => {
+        const btn = document.getElementById('btn-switch-seed');
+        if (activeShuffle === 'fixed') {
+          btn.innerHTML = '<i class="fa-solid fa-key"></i> Shuffle: Fixed Seed';
+          btn.className = 'btn btn-secondary';
+        } else {
+          btn.innerHTML = '<i class="fa-solid fa-shuffle"></i> Shuffle: Random';
+          btn.className = 'btn btn-secondary';
+        }
+      };
+
       document.getElementById('btn-switch-mode').addEventListener('click', () => {
         activeMode = activeMode === 'ai' ? 'human' : 'ai';
         updateModeUI();
         selectedHandCardIdx = null;
         lastTurn = null;
         clearVisualHighlights();
-        socket.emit('start-game', activeMode);
+        socket.emit('start-game', activeMode, activeShuffle);
+      });
+
+      document.getElementById('btn-switch-seed').addEventListener('click', () => {
+        activeShuffle = activeShuffle === 'random' ? 'fixed' : 'random';
+        updateShuffleUI();
+        selectedHandCardIdx = null;
+        lastTurn = null;
+        clearVisualHighlights();
+        socket.emit('start-game', activeMode, activeShuffle);
       });
 
       document.getElementById('btn-reset-game').addEventListener('click', () => {
         selectedHandCardIdx = null;
         lastTurn = null;
         clearVisualHighlights();
-        socket.emit('start-game', activeMode);
+        socket.emit('start-game', activeMode, activeShuffle);
       });
 
       document.getElementById('btn-toggle-p2-hand').addEventListener('click', () => {
@@ -618,11 +649,28 @@
           heading.textContent = 'Match Complete';
 
           let winnerAnnouncement = state.winnerText || '';
-          if (winnerAnnouncement.includes('Player 1 won')) {
-            winnerAnnouncement = '🏆 Congratulations! Player 1 won the match!';
-          } else if (winnerAnnouncement.includes('Player 2 won')) {
-            const opponentName = state.gameMode === 'ai' ? 'the AI' : 'Player 2';
-            winnerAnnouncement = `🏆 Congratulations! ${opponentName} won the match!`;
+          if (state.gameMode === 'ai') {
+            if (winnerAnnouncement.includes('Player 1 won')) {
+              winnerAnnouncement = '🏆 Congratulations! You defeated the AI!';
+            } else if (winnerAnnouncement.includes('Player 2 won')) {
+              winnerAnnouncement = '🤖 The AI won the match. Better luck next expedition!';
+            }
+          } else {
+            if (winnerAnnouncement.includes('Player 1 won')) {
+              winnerAnnouncement = '🏆 Congratulations! Player 1 won the match!';
+            } else if (winnerAnnouncement.includes('Player 2 won')) {
+              winnerAnnouncement = '🏆 Congratulations! Player 2 won the match!';
+            }
+          }
+
+          const lblP1 = document.getElementById('lbl-p1-score');
+          const lblP2 = document.getElementById('lbl-p2-score');
+          if (state.gameMode === 'ai') {
+            if (lblP1) lblP1.textContent = 'Your Score';
+            if (lblP2) lblP2.textContent = 'AI Score';
+          } else {
+            if (lblP1) lblP1.textContent = 'Player 1 Score';
+            if (lblP2) lblP2.textContent = 'Player 2 Score';
           }
 
           instruction.textContent = winnerAnnouncement || 'The match has finished!';
@@ -646,12 +694,19 @@
           return;
         }
 
-        heading.textContent = `Player ${state.currentTurn} Action`;
+        if (state.gameMode === 'ai') {
+          heading.textContent = state.currentTurn === 1 ? 'Your Turn' : "AI's Turn";
+        } else {
+          heading.textContent = `Player ${state.currentTurn} Action`;
+        }
 
         if (state.prompt === 'DISCARD_OR_PLACE') {
           if (selectedHandCardIdx === null) {
-            heading.textContent = `Play a Card`;
-            instruction.innerHTML = `👈 Click on a card in Player ${state.currentTurn}'s Hand below to select it.`;
+            heading.textContent = state.gameMode === 'ai' ? 'Your Turn' : `Play a Card`;
+            instruction.innerHTML =
+              state.gameMode === 'ai'
+                ? `👈 Click on a card in your Hand below to select it.`
+                : `👈 Click on a card in Player ${state.currentTurn}'s Hand below to select it.`;
           } else {
             const activeHand = state.currentTurn === 1 ? state.player1Hand : state.player2Hand;
             const card = activeHand[selectedHandCardIdx];
@@ -687,7 +742,10 @@
             buttonsContainer.appendChild(btnCancel);
           }
         } else if (state.prompt === 'PICK_CARD') {
-          instruction.textContent = `Click on one of the cards in Player ${state.currentTurn}'s Hand below to play it.`;
+          instruction.textContent =
+            state.gameMode === 'ai'
+              ? `Click on one of the cards in your Hand below to play it.`
+              : `Click on one of the cards in Player ${state.currentTurn}'s Hand below to play it.`;
         } else if (state.prompt === 'PICK_DRAW_OR_DISCARD') {
           heading.textContent = 'Draw a Card';
           instruction.innerHTML =
@@ -854,12 +912,10 @@
           document.getElementById('p2-hand-title').textContent =
             `Opponent Hand (Player ${inactivePlayerNum})`;
         } else {
-          document.getElementById('player-placed-title').textContent =
-            'Your Placed Expeditions (Player 1)';
-          document.getElementById('opponent-placed-title').textContent =
-            "Opponent's Placed Expeditions (Player 2)";
-          document.getElementById('player-hand-title').textContent = 'Your Hand (Select a Card)';
-          document.getElementById('p2-hand-title').textContent = 'AI Hand (Player 2)';
+          document.getElementById('player-placed-title').textContent = 'Your Placed Expeditions';
+          document.getElementById('opponent-placed-title').textContent = "AI's Placed Expeditions";
+          document.getElementById('player-hand-title').textContent = 'Your Hand';
+          document.getElementById('p2-hand-title').textContent = 'AI Hand';
         }
 
         const playerHandGrid = document.getElementById('player-hand');
@@ -885,7 +941,7 @@
         const modal = document.getElementById('game-over-modal');
         if (modal.open) modal.close();
         lastTurn = null;
-        socket.emit('start-game', activeMode);
+        socket.emit('start-game', activeMode, activeShuffle);
       });
 
       // ── Spotlight cursor glow tracking ──

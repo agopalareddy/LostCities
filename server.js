@@ -214,10 +214,11 @@ io.on('connection', (socket) => {
     gameMode: 'ai',
   };
 
-  const startGame = (mode) => {
+  const startGame = (mode, shuffle) => {
     if (javaProcess) {
       javaProcess.kill();
     }
+    const seedOption = shuffle === 'fixed' ? 'fixed' : 'random';
     currentState = {
       currentTurn: 1,
       playerHand: [],
@@ -234,11 +235,12 @@ io.on('connection', (socket) => {
       p1Score: 0,
       p2Score: 0,
       gameMode: mode || 'ai',
+      shuffleMode: seedOption,
     };
 
     const p2Type = mode === 'human' ? 'human' : 'ai';
-    console.log(`Spawning Java process: LostCities human ${p2Type}`);
-    javaProcess = spawn('java', ['LostCities', 'human', p2Type], {
+    console.log(`Spawning Java process: LostCities human ${p2Type} ${seedOption}`);
+    javaProcess = spawn('java', ['LostCities', 'human', p2Type, seedOption], {
       cwd: path.join(__dirname, 'LostCities'),
     });
 
@@ -301,8 +303,8 @@ io.on('connection', (socket) => {
     });
   };
 
-  socket.on('start-game', (mode) => {
-    startGame(mode);
+  socket.on('start-game', (mode, shuffle) => {
+    startGame(mode, shuffle);
   });
 
   socket.on('input', (message) => {

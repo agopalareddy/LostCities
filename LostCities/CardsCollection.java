@@ -12,7 +12,7 @@ Holds
 */
 
 public class CardsCollection {
-    Random rand = new Random(0);
+    Random rand;
 
     static Color[] colors = { Color.yellow, Color.blue, Color.white, Color.green, Color.red };
     static int[] numbers = { 0, 0, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -23,11 +23,17 @@ public class CardsCollection {
 
     /* CONSTRUCTORS */
 
-    /*
-     * Takes in a character (U/D) indicating whether pile of cards is undealt pile
-     * of discard cards
-     */
     public CardsCollection(char ch) {
+        this(ch, "random");
+    }
+
+    public CardsCollection(char ch, String seedOption) {
+        if ("fixed".equals(seedOption) || "0".equals(seedOption)) {
+            rand = new Random(0);
+        } else {
+            rand = new Random();
+        }
+
         if (ch == 'U' || ch == 'u') {// if undealt cards pile
             is_undealtCards = true;
             is_discard_pile = false;
@@ -35,7 +41,6 @@ public class CardsCollection {
         } else if (ch == 'D' || ch == 'd') {// if discard pile
             is_undealtCards = false;
             is_discard_pile = true;
-
         } else {
             is_undealtCards = false;
             is_discard_pile = false;
@@ -44,6 +49,7 @@ public class CardsCollection {
 
     /* Makes non-special pile of cards */
     public CardsCollection() {
+        rand = new Random();
         is_undealtCards = false;
         is_discard_pile = false;
     }

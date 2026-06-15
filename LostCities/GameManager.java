@@ -26,6 +26,10 @@ public class GameManager {
 
     /* Initialize the internal variables */
     public GameManager(String s1, String s2) {
+        this(s1, s2, "random");
+    }
+
+    public GameManager(String s1, String s2, String seedOption) {
         if ("human".equals(s1)) {
             p1 = new Human("");
         } else {
@@ -37,7 +41,7 @@ public class GameManager {
         } else {
             p2 = new Ai();
         }
-        undealt = new CardsCollection('U');
+        undealt = new CardsCollection('U', seedOption);
         discards = new DiscardPiles();
     }
 

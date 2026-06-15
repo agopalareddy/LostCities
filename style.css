@@ -757,8 +757,6 @@
   }
 
   .card-back {
-    width: clamp(68px, 10vw, 84px);
-    height: clamp(92px, 13.5vw, 116px);
     border-radius: var(--radius-sm);
     background: var(--accent);
     border: 1px solid var(--accent);
@@ -791,8 +789,6 @@
 
   /* Game Expeditions Cards Visual Grid */
   .game-card {
-    width: clamp(68px, 10vw, 84px);
-    height: clamp(92px, 13.5vw, 116px);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     display: flex;
@@ -803,6 +799,15 @@
     position: relative;
     transition: all var(--transition);
     box-shadow: var(--shadow-sm);
+  }
+
+  .game-card,
+  .card-back,
+  .card-back-small {
+    width: 100%;
+    max-width: 84px;
+    aspect-ratio: 0.72;
+    height: auto;
   }
 
   .game-card:hover {
@@ -890,16 +895,17 @@
 
   /* Hand Section */
   .hand-grid {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 8px;
-    overflow-x: auto;
     padding: 8px 0;
-    min-height: 125px;
+    min-height: 110px;
+    align-items: center;
   }
 
   .hand-grid .game-card,
   .hand-grid .card-back-small {
-    flex: 0 0 auto;
+    justify-self: center;
   }
 
   .hand-grid::-webkit-scrollbar {
@@ -1259,6 +1265,10 @@
   }
 
   @media (max-width: 600px) {
+    .app-container {
+      padding: 1rem 0.5rem 4rem;
+    }
+
     .colors-grid,
     .discard-grid {
       gap: 6px;
@@ -1266,27 +1276,33 @@
 
     .central-board {
       grid-template-columns: 1fr 2fr;
-      gap: 1rem;
-      padding: 1rem;
-    }
-
-    .card-back,
-    .card-back-small,
-    .game-card {
-      width: clamp(52px, 14vw, 68px);
-      height: clamp(72px, 19vw, 94px);
+      gap: 0.75rem;
+      padding: 0.75rem;
     }
 
     .colors-grid .col-pile .game-card {
       margin-top: -56px;
     }
 
+    .expeditions-row {
+      padding: 0.75rem;
+    }
+
     .card {
-      padding: 1.25rem;
+      padding: 1rem;
     }
 
     .board-area {
-      padding: 1rem;
+      padding: 0.75rem;
+      gap: 1rem;
+    }
+
+    .header-logo {
+      font-size: 1.4rem;
+    }
+
+    .back-home-link span {
+      display: none;
     }
   }
 
@@ -1294,13 +1310,6 @@
     .colors-grid,
     .discard-grid {
       gap: 4px;
-    }
-
-    .card-back,
-    .card-back-small,
-    .game-card {
-      width: clamp(44px, 16vw, 58px);
-      height: clamp(60px, 22vw, 80px);
     }
 
     .colors-grid .col-pile .game-card {
@@ -1370,8 +1379,6 @@
   }
 
   .card-back-small {
-    width: clamp(68px, 10vw, 84px);
-    height: clamp(92px, 13.5vw, 116px);
     border-radius: var(--radius-sm);
     background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
     border: 1px solid var(--border-color);

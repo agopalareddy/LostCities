@@ -795,7 +795,8 @@
       const updateTurnState = (state) => {
         const isAiOnlyMode = state.gameMode === 'ai-vs-ai';
         const isAiTurn = state.gameMode === 'ai' && !state.isGameOver && !state.prompt;
-        document.body.dataset.turn = isAiTurn || isAiOnlyMode ? 'ai' : 'player';
+        // Do not collapse opponent's expeditions in spectator AI vs AI mode
+        document.body.dataset.turn = isAiTurn && !isAiOnlyMode ? 'ai' : 'player';
       };
 
       // ─── Pass Screen Dialog handling ───

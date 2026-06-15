@@ -261,15 +261,13 @@ io.on('connection', (socket) => {
     }
   }
 
-  /** Release one queued step (if any) immediately; mark paused if queue empty. */
+  /** Release one queued step (if any) immediately. We always keep stepPaused = true in AI-vs-AI mode to prevent auto-draining. */
   function releaseNextStep() {
     if (stepQueue.length > 0) {
       const chunk = stepQueue.shift();
       emitStep(chunk);
-      stepPaused = stepQueue.length === 0;
-    } else {
-      stepPaused = true;
     }
+    stepPaused = true;
     socket.emit('step-queue-size', stepQueue.length);
   }
 

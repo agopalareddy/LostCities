@@ -33,7 +33,7 @@ public class GameManager {
         }
 
         if ("human".equals(s2)) {
-            p2 = new Human("testCasesp2.txt");
+            p2 = new Human("");
         } else {
             p2 = new Ai();
         }

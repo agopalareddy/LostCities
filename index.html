@@ -136,10 +136,10 @@
       <main class="game-board-layout">
         <!-- Left Side: Board & Collections -->
         <div class="board-area spotlight-card">
-          <!-- Opponent Placed Expeditions -->
-          <div class="expeditions-row opponent">
-            <h2>Opponent's Placed Expeditions (Player 2)</h2>
-            <div class="colors-grid" id="opponent-placed">
+          <!-- Player Placed Expeditions -->
+          <div class="expeditions-row player">
+            <h2>Your Placed Expeditions (Player 1)</h2>
+            <div class="colors-grid" id="player-placed">
               <div class="col-pile yellow" data-color="Yellow"></div>
               <div class="col-pile blue" data-color="Blue"></div>
               <div class="col-pile white" data-color="White"></div>
@@ -169,10 +169,10 @@
             </div>
           </div>
 
-          <!-- Player Placed Expeditions -->
-          <div class="expeditions-row player">
-            <h2>Your Placed Expeditions (Player 1)</h2>
-            <div class="colors-grid" id="player-placed">
+          <!-- Opponent Placed Expeditions -->
+          <div class="expeditions-row opponent">
+            <h2>Opponent's Placed Expeditions (Player 2)</h2>
+            <div class="colors-grid" id="opponent-placed">
               <div class="col-pile yellow" data-color="Yellow"></div>
               <div class="col-pile blue" data-color="Blue"></div>
               <div class="col-pile white" data-color="White"></div>
@@ -184,6 +184,14 @@
 
         <!-- Right Side: Control Panel, Actions & Hand -->
         <div class="sidebar-area">
+          <!-- Player Hand -->
+          <div class="card hand-card spotlight-card">
+            <h2>Your Hand (Select a Card)</h2>
+            <div class="hand-grid" id="player-hand">
+              <!-- Cards will render here -->
+            </div>
+          </div>
+
           <!-- Action / Question Panel -->
           <div class="card control-card spotlight-card">
             <h2 id="action-heading">Game Status</h2>
@@ -193,14 +201,6 @@
 
               <!-- Dynamic Button Choices will appear here -->
               <div id="choice-buttons" class="choice-buttons"></div>
-            </div>
-          </div>
-
-          <!-- Player Hand -->
-          <div class="card hand-card spotlight-card">
-            <h2>Your Hand (Select a Card)</h2>
-            <div class="hand-grid" id="player-hand">
-              <!-- Cards will render here -->
             </div>
           </div>
 

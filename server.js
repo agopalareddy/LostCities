@@ -202,11 +202,106 @@ io.on('connection', (socket) => {
     gameMode: 'ai',
   };
 
-  const startGame = (mode, shuffle) => {
+  // ── AI-vs-AI step buffering ──────────────────────────────────────────────────
+  // In AI-vs-AI mode, Java emits [TURN_DONE] after each turn. We buffer those
+  // chunks and release them one-at-a-time when the client requests "next-step".
+  let aiVsAiMode = false;
+  let stepQueue = []; // Array of raw stdout snapshots (one per [TURN_DONE])
+  let pendingChunk = ''; // Accumulates raw stdout between [TURN_DONE] markers
+  let stepPaused = false; // Whether we're waiting for next-step signal
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /** Merge new parse results into currentState, only updating non-empty/changed fields. */
+  function mergeState(state) {
+    if (state.player1Hand && state.player1Hand.length > 0) {
+      currentState.player1Hand = state.player1Hand;
+    }
+    if (state.player2Hand && state.player2Hand.length > 0) {
+      currentState.player2Hand = state.player2Hand;
+    }
+    currentState.playerHand =
+      currentState.currentTurn === 1 ? currentState.player1Hand : currentState.player2Hand;
+
+    if (state.p1Placed && Object.values(state.p1Placed).some((arr) => arr.length > 0)) {
+      currentState.p1Placed = state.p1Placed;
+    }
+    if (state.p2Placed && Object.values(state.p2Placed).some((arr) => arr.length > 0)) {
+      currentState.p2Placed = state.p2Placed;
+    }
+    if (state.discards && Object.values(state.discards).some((arr) => arr.length > 0)) {
+      currentState.discards = state.discards;
+    }
+
+    if (state.drawPileSize !== null) currentState.drawPileSize = state.drawPileSize;
+    currentState.currentTurn = state.currentTurn;
+    currentState.prompt = state.prompt || currentState.prompt;
+    currentState.options = state.options;
+    if (state.isGameOver) {
+      currentState.isGameOver = true;
+      currentState.winnerText = state.winnerText || currentState.winnerText;
+      currentState.p1Score = state.p1Score;
+      currentState.p2Score = state.p2Score;
+    }
+  }
+
+  /** Emit a game-update for the given raw stdout chunk. */
+  function emitStep(rawChunk) {
+    outputBuffer += rawChunk;
+    const state = parseGameState(outputBuffer);
+    mergeState(state);
+
+    socket.emit('game-update', {
+      ...currentState,
+      raw: outputBuffer,
+    });
+
+    if (state.prompt || state.isGameOver) {
+      outputBuffer = '';
+    }
+  }
+
+  /** Release one queued step (if any) immediately; mark paused if queue empty. */
+  function releaseNextStep() {
+    if (stepQueue.length > 0) {
+      const chunk = stepQueue.shift();
+      emitStep(chunk);
+      stepPaused = stepQueue.length === 0;
+    } else {
+      stepPaused = true;
+    }
+    socket.emit('step-queue-size', stepQueue.length);
+  }
+
+  const startGame = (options) => {
+    const { mode, shuffle, p1Type, p2Type } = options;
+
     if (javaProcess) {
       javaProcess.kill();
     }
+
+    // Reset step buffers
+    stepQueue = [];
+    pendingChunk = '';
+    stepPaused = false;
+
     const seedOption = shuffle === 'fixed' ? 'fixed' : 'random';
+    aiVsAiMode = mode === 'ai-vs-ai';
+
+    // Determine Java player type args
+    let javaP1 = 'human';
+    let javaP2 = 'minimax';
+
+    if (mode === 'ai') {
+      javaP1 = 'human';
+      javaP2 = p2Type || 'minimax';
+    } else if (mode === 'human') {
+      javaP1 = 'human';
+      javaP2 = 'human';
+    } else if (mode === 'ai-vs-ai') {
+      javaP1 = p1Type || 'minimax';
+      javaP2 = p2Type || 'alphabeta';
+    }
+
     currentState = {
       currentTurn: 1,
       playerHand: [],
@@ -224,60 +319,67 @@ io.on('connection', (socket) => {
       p2Score: 0,
       gameMode: mode || 'ai',
       shuffleMode: seedOption,
+      p1Type: javaP1,
+      p2Type: javaP2,
     };
+    outputBuffer = '';
 
-    const p2Type = mode === 'human' ? 'human' : 'ai';
-    console.log(`Spawning Java process: LostCities human ${p2Type} ${seedOption}`);
-    javaProcess = spawn('java', ['LostCities', 'human', p2Type, seedOption], {
+    console.log(`Spawning Java process: LostCities ${javaP1} ${javaP2} ${seedOption}`);
+    javaProcess = spawn('java', ['LostCities', javaP1, javaP2, seedOption], {
       cwd: path.join(__dirname, 'LostCities'),
     });
 
     javaProcess.stdout.on('data', (data) => {
       const chunk = data.toString();
-      outputBuffer += chunk;
       console.log(`[Java LostCities Stdout]: ${chunk}`);
 
-      const state = parseGameState(outputBuffer);
+      if (!aiVsAiMode) {
+        // Human-involved mode: stream directly as before
+        outputBuffer += chunk;
+        const state = parseGameState(outputBuffer);
+        mergeState(state);
 
-      // Update persistent game collections if we parsed newer non-empty data
-      if (state.player1Hand && state.player1Hand.length > 0) {
-        currentState.player1Hand = state.player1Hand;
-      }
-      if (state.player2Hand && state.player2Hand.length > 0) {
-        currentState.player2Hand = state.player2Hand;
-      }
-      currentState.playerHand =
-        currentState.currentTurn === 1 ? currentState.player1Hand : currentState.player2Hand;
+        socket.emit('game-update', {
+          ...currentState,
+          raw: outputBuffer,
+        });
 
-      if (state.p1Placed && Object.values(state.p1Placed).some((arr) => arr.length > 0)) {
-        currentState.p1Placed = state.p1Placed;
-      }
-      if (state.p2Placed && Object.values(state.p2Placed).some((arr) => arr.length > 0)) {
-        currentState.p2Placed = state.p2Placed;
-      }
-      if (state.discards && Object.values(state.discards).some((arr) => arr.length > 0)) {
-        currentState.discards = state.discards;
-      }
+        if (state.prompt || state.isGameOver) {
+          outputBuffer = '';
+        }
+      } else {
+        // AI-vs-AI mode: buffer turns between [TURN_DONE] markers
+        pendingChunk += chunk;
 
-      if (state.drawPileSize !== null) currentState.drawPileSize = state.drawPileSize;
-      currentState.currentTurn = state.currentTurn;
-      currentState.prompt = state.prompt || currentState.prompt;
-      currentState.options = state.options;
-      if (state.isGameOver) {
-        currentState.isGameOver = true;
-        currentState.winnerText = state.winnerText || currentState.winnerText;
-        currentState.p1Score = state.p1Score;
-        currentState.p2Score = state.p2Score;
-      }
+        // Split on [TURN_DONE] markers
+        let parts = pendingChunk.split('[TURN_DONE]');
+        // The last part may be incomplete; keep it in pendingChunk
+        pendingChunk = parts.pop();
 
-      socket.emit('game-update', {
-        ...currentState,
-        raw: outputBuffer,
-      });
+        for (const part of parts) {
+          if (part.trim()) {
+            stepQueue.push(part);
+          }
+        }
 
-      // Reset buffer on active question prompts
-      if (state.prompt || state.isGameOver) {
-        outputBuffer = '';
+        // If the remaining buffer ends a game (has 'won!'), push it too
+        if (pendingChunk.includes('won!') || pendingChunk.includes('Play again?')) {
+          stepQueue.push(pendingChunk);
+          pendingChunk = '';
+        }
+
+        socket.emit('step-queue-size', stepQueue.length);
+
+        // If not paused, release immediately (first turn or auto-play)
+        if (!stepPaused) {
+          // Drain queued steps immediately (auto mode releases as they arrive)
+          while (stepQueue.length > 0) {
+            emitStep(stepQueue.shift());
+          }
+        } else {
+          // Paused: waiting for client to request next-step
+          socket.emit('step-queue-size', stepQueue.length);
+        }
       }
     });
 
@@ -287,12 +389,24 @@ io.on('connection', (socket) => {
 
     javaProcess.on('close', (code) => {
       console.log(`Java LostCities closed with code ${code}`);
+      // Flush any remaining pending chunk in AI-vs-AI mode
+      if (aiVsAiMode && pendingChunk.trim()) {
+        stepQueue.push(pendingChunk);
+        pendingChunk = '';
+        socket.emit('step-queue-size', stepQueue.length);
+      }
       socket.emit('game-terminated', { code });
     });
   };
 
-  socket.on('start-game', (mode, shuffle) => {
-    startGame(mode, shuffle);
+  // Legacy start-game support (old signature: mode, shuffle)
+  socket.on('start-game', (modeOrOptions, shuffle) => {
+    if (typeof modeOrOptions === 'object') {
+      startGame(modeOrOptions);
+    } else {
+      // Legacy: mode string + shuffle string
+      startGame({ mode: modeOrOptions, shuffle });
+    }
   });
 
   socket.on('input', (message) => {
@@ -303,6 +417,24 @@ io.on('connection', (socket) => {
       javaProcess.stdin.write(cleanMessage + '\n');
     }
   });
+
+  // ── AI-vs-AI step control ───────────────────────────────────────────────────
+  socket.on('next-step', () => {
+    stepPaused = true; // Ensure we stay in manual mode
+    releaseNextStep();
+  });
+
+  socket.on('set-auto-play', (enabled) => {
+    stepPaused = !enabled;
+    if (enabled && stepQueue.length > 0) {
+      // Drain all buffered steps immediately when switching to auto
+      while (stepQueue.length > 0) {
+        emitStep(stepQueue.shift());
+      }
+      socket.emit('step-queue-size', 0);
+    }
+  });
+  // ─────────────────────────────────────────────────────────────────────────────
 
   socket.on('disconnect', () => {
     console.log(` Lost Cities client disconnected: ${socket.id}`);

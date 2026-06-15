@@ -1391,4 +1391,153 @@
     transform: none !important;
     box-shadow: var(--shadow-sm) !important;
   }
+
+  /* ── Mode selector group ─────────────────────────────────────── */
+  .mode-group {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: 0.2rem;
+  }
+
+  .mode-btn {
+    border-radius: var(--radius-pill) !important;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+
+  /* ── AI vs AI Configuration Panel ───────────────────────────── */
+  .aivsai-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin: 0 0 1rem;
+    box-shadow: var(--shadow-md);
+    animation: slide-down 0.2s ease;
+  }
+
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .aivsai-config {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .ai-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .ai-picker label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+  }
+
+  .ai-type-group {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .ai-type-btn {
+    flex: 1;
+    font-size: 0.8rem !important;
+    padding: 0.35rem 0.65rem !important;
+  }
+
+  .ai-vs-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    padding: 0 0.25rem;
+    padding-top: 1.25rem; /* align with buttons (below label) */
+  }
+
+  /* ── Playback Controls ───────────────────────────────────────── */
+  .playback-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .playback-mode-toggle {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: 0.2rem;
+  }
+
+  .playback-mode-btn {
+    border-radius: var(--radius-pill) !important;
+    font-size: 0.8rem !important;
+    padding: 0.3rem 0.7rem !important;
+    white-space: nowrap;
+  }
+
+  .step-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .step-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-surface-hover);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: 0.15rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  .speed-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .speed-controls input[type='range'] {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .speed-controls span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 4ch;
+  }
 }

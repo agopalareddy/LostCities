@@ -1,138 +1,76 @@
 import java.awt.*;
 import java.util.*;
 
+/**
+ * Ai (Greedy) — makes locally-optimal decisions at each step.
+ *
+ * OUTGOING card: uses an expected-score heuristic (makePotentialPlacedCards +
+ * getExpectedScores) to pick the best (card, place-or-discard) action. This
+ * is unchanged from the original implementation and is deliberately simple.
+ *
+ * INCOMING card: evaluates ALL available draw options (deck top + each
+ * non-empty discard pile top) via evalPosition() and picks the card that
+ * maximises our expected-score advantage. The original code chose randomly
+ * (50 % deck, 50 % random discard pile), which is clearly sub-optimal.
+ *
+ * Decisions are made SEQUENTIALLY — outgoing first, then incoming — rather
+ * than jointly. This can miss globally better (outgoing, incoming) pairs;
+ * MinimaxAi corrects this.
+ */
 public class Ai extends Player {
-    Random rand = new Random(0);
-
-
 
     /* CONSTRUCTORS */
-
-    /* Default CONSTRUCTOR */
-    Ai() {
-    }
+    Ai() {}
 
     /* GETTER FUNCTIONS */
 
-    /* Returns true if string is "ai" or something similar */
     @Override
     public boolean isIt(String s) {
-        return s == "ai" || s == "AI" || s == "Ai";
-    }
-
-    /** Return random number between min and max */
-    private int getRandomNumber(int min, int max) {
-        return rand.nextInt(max - min) + min;
+        return "ai".equalsIgnoreCase(s) || "greedy".equalsIgnoreCase(s);
     }
 
     /* AUXILIARY FUNCTIONS */
 
-    /* Conducts the turn if called on an ai object */
+    /** Conducts one full turn: outgoing card then incoming draw. */
     @Override
     public void play(ArrayList<CardsCollection> opponent_placed_down, DiscardPiles discards, CardsCollection undealt) {
-        int random_number = 0;
-        Card outgoing_card;
-        /** Decide to discard or play */
-        // random_number = getRandomNumber(0, 2);
-        // if (random_number == 0) {
-        // // discard
-        // /** Decide which card */
-        // random_number = getRandomNumber(0, 8);
-        // outgoing_card = getCardAt(random_number);
-        // removeCard(outgoing_card);
-        // discards.addCard(outgoing_card);
-        // System.out.print("AI chose to discard ");
-
-        // } else {
-        // // play
-        // /** Decide which card */
-        // random_number = getRandomNumber(0, 8);
-        // outgoing_card = getCardAt(random_number);
-        // removeCard(outgoing_card);
-        // placeCard(outgoing_card);
-        // System.out.print("AI chose to place ");
-        // }
-        // outgoing_card.display();
-
-        outgoing_card = outgoingPlay(opponent_placed_down, discards, undealt);
+        // Phase 1 — outgoing card (heuristic, unchanged).
+        Card outgoing_card = outgoingPlay(opponent_placed_down, discards, undealt);
 
         System.out.print("\nAI's hand is now ");
         display();
 
-        Card incoming_card;
-        if (discards.isEmpty()) {
-            /**
-             * if AI can take a card from undealt pile only because there are no cards
-             * in discard pile
-             */
-            System.out.println("\nAI took card from draw pile only because there are no cards in discard piles");
-            incoming_card = undealt.getTopCard();
-            undealt.removeCard(incoming_card);
-        } else {
-            /** Decide to take from undealt or one of the discard piles */
-            random_number = getRandomNumber(0, 2);
-            if (random_number == 0) {
-
-                /** Decide which pile if discard piles */
-                random_number = getRandomNumber(0, 5);
-                incoming_card = discards.getTopCard(colors[random_number]);
-                while (incoming_card.getCardColor() == Color.black) {
-                    random_number = getRandomNumber(0, 5);
-                    incoming_card = discards.getTopCard(colors[random_number]);
-                }
-                if (incoming_card == outgoing_card) {
-                    incoming_card = undealt.getTopCard();
-                    undealt.removeCard(incoming_card);
-                    System.out.print("AI chose draw pile\n");
-                } else {
-                    discards.removeCard(incoming_card);
-                    System.out.print("AI chose discard pile.\n");
-                }
-            } else {
-                incoming_card = undealt.getTopCard();
-                undealt.removeCard(incoming_card);
-                System.out.print("AI chose draw pile\n");
-            }
-
-        }
+        // Phase 2 — incoming card: evaluate every draw option, pick the best.
+        Card incoming_card = bestIncomingCard(opponent_placed_down, discards, undealt, outgoing_card);
 
         System.out.print("AI's getting ");
         incoming_card.display();
-        addCard(incoming_card);// add the card to player's hand
+        addCard(incoming_card);
 
         System.out.print("\nAI's hand is now ");
         display();
     }
 
-    /*
-     * General Approach:
-     * - Calculate a potential score based on the cards known and unknown
-     * - If it's greater than the opponent's potential score, place the best card
-     * - If it's not, then discard the worst
+    /**
+     * Greedy outgoing: pick the (card, place/discard) with the highest expected
+     * score impact. Returns the card played so that bestIncomingCard can exclude
+     * a just-discarded card from the draw pool.
      */
-    public Card outgoingPlay(ArrayList<CardsCollection> opponent_placed_down, DiscardPiles discards,
-            CardsCollection undealt) {
+    public Card outgoingPlay(ArrayList<CardsCollection> opponent_placed_down,
+            DiscardPiles discards, CardsCollection undealt) {
 
-        ArrayList<CardsCollection> potential_placed_cards = makePotentialPlacedCards(hand, placed_down,
-                opponent_placed_down, undealt);
-        // System.out.println("potential placed cards: ");
-        // for (int i = 0; i < potential_placed_cards.size(); i++) {
-        //     potential_placed_cards.get(i).display();
-        // }
-
-
+        ArrayList<CardsCollection> potential_placed_cards =
+                makePotentialPlacedCards(hand, placed_down, opponent_placed_down, undealt);
 
         ArrayList<ArrayList<Double>> expected_scores = getExpectedScores(potential_placed_cards, undealt);
 
-        // System.out.println("AI Expected Scores: ");
-        // System.out.println(expected_scores.toString());
-
-        // opponent expected score
+        // Print our own total expected score (informational).
         double total = 0;
-        double perc = (((double) undealt.size() + 16) / 2) / ((double) undealt.size());
+        double perc = undealt.size() > 0
+                ? (((double) undealt.size() + 16) / 2) / undealt.size()
+                : 1.0;
         for (int i = 0; i < potential_placed_cards.size(); i++) {
-            double score = potential_placed_cards.get(getColorIndex((colors[i]))).getScore(20 * perc);
-            total += score;
+            total += potential_placed_cards.get(getColorIndex(colors[i])).getScore(20 * perc);
         }
         System.out.println("Opponent's total expected score = " + total);
 
@@ -146,17 +84,13 @@ public class Ai extends Player {
         }
 
         Card outgoing_card;
-        // if expected score of discarding is better than placing, then discard,
-        // else place
         if (expected_scores.get(0).get(discarding_max_index) > expected_scores.get(1).get(placing_max_index)) {
-            // discard the card when discarding gives a higher score than placing it
             outgoing_card = hand.getCardAt(discarding_max_index);
             System.out.print("AI discarded ");
             outgoing_card.display();
             removeCard(outgoing_card);
             discards.addCard(outgoing_card);
         } else {
-            // place the card when placing it gives a higher score than discarding it
             outgoing_card = hand.getCardAt(placing_max_index);
             System.out.print("AI placed ");
             outgoing_card.display();
@@ -166,21 +100,119 @@ public class Ai extends Player {
         return outgoing_card;
     }
 
+    /**
+     * Greedy incoming: evaluate each available draw option (deck top and every
+     * non-empty discard pile top, excluding the card just discarded) and pick
+     * the one that maximises evalPosition(). Replaces the original random draw.
+     */
+    protected Card bestIncomingCard(ArrayList<CardsCollection> opponentPlaced,
+            DiscardPiles discards, CardsCollection undealt, Card outCard) {
+
+        if (discards.isEmpty()) {
+            System.out.println("\nAI took from draw pile (no discards available).");
+            Card c = undealt.getTopCard();
+            undealt.removeCard(c);
+            return c;
+        }
+
+        double bestVal = Double.NEGATIVE_INFINITY;
+        Card bestCard = null;
+        boolean bestFromDeck = true;
+
+        // Option: draw from deck.
+        if (!undealt.isEmpty()) {
+            Card deckTop = undealt.getTopCard();
+            hand.addCard(deckTop);
+            double val = evalPosition(opponentPlaced, discards, undealt);
+            hand.removeCard(deckTop);
+            if (val > bestVal) {
+                bestVal = val;
+                bestCard = deckTop;
+                bestFromDeck = true;
+            }
+        }
+
+        // Option: draw from each non-empty discard pile top.
+        for (Color col : colors) {
+            Card top = discards.getTopCard(col);
+            if (top.getCardColor() == Color.black) continue; // empty pile sentinel
+            if (top == outCard) continue;                    // can't re-take just-discarded
+
+            hand.addCard(top);
+            double val = evalPosition(opponentPlaced, discards, undealt);
+            hand.removeCard(top);
+
+            if (val > bestVal) {
+                bestVal = val;
+                bestCard = top;
+                bestFromDeck = false;
+            }
+        }
+
+        // Execute the chosen draw.
+        if (bestFromDeck || bestCard == null) {
+            Card c = undealt.getTopCard();
+            undealt.removeCard(c);
+            System.out.print("AI chose draw pile. ");
+            return c;
+        } else {
+            discards.removeCard(bestCard);
+            System.out.print("AI chose discard pile. ");
+            return bestCard;
+        }
+    }
+
     /* PROTECTED FUNCTIONS */
 
+    /**
+     * Evaluate the current position as: our expected score − opponent's estimated
+     * score. Used as the leaf-node evaluation function for MinimaxAi and
+     * AlphaBetaAi.
+     *
+     * Our expected score is computed via makePotentialPlacedCards (accounts for
+     * cards already placed, cards in hand, and the probability of drawing future
+     * cards). Opponent's score is estimated from their placed cards only (their
+     * hand is unknown), weighted by the same draw-probability factor.
+     */
+    protected double evalPosition(ArrayList<CardsCollection> opponentPlaced,
+            DiscardPiles discards, CardsCollection undealt) {
+
+        double perc = undealt.size() > 0
+                ? (((double) undealt.size() + 8) / 2) / undealt.size()
+                : 1.0;
+
+        ArrayList<CardsCollection> potential =
+                makePotentialPlacedCards(hand, placed_down, opponentPlaced, undealt);
+        double ourScore = 0;
+        for (Color col : colors) {
+            ourScore += potential.get(getColorIndex(col)).getScore(20 * perc);
+        }
+
+        double oppPerc = undealt.size() > 0
+                ? (((double) undealt.size() + 16) / 2) / undealt.size()
+                : 1.0;
+        double oppScore = 0;
+        for (CardsCollection pile : opponentPlaced) {
+            oppScore += pile.getScore(20 * oppPerc);
+        }
+
+        return ourScore - oppScore;
+    }
+
     /*
-     * - First makes a list of all cards, seperated by colors and ordered by value
-     * (handshake first, and then ascending)
-     * - Then, goes through each card, making the following changes
-     * ---- if card is in AI's hand, or opponent has placed down, or the card is
-     * less than the AI's last placed down in that color, then remove the card
-     * ---- if card is not placed by AI, change the card's value to be a fraction
-     * of itself
-     * ---- if card is none of the above, then keep the card as it is
+     * - First makes a list of all cards, separated by colors and ordered by value
+     *   (handshake first, then ascending).
+     * - Then, for each card:
+     *   - If it is in the AI's hand, or opponent has placed it, or it is below the
+     *     AI's last placed card in that color → remove it from potential.
+     *   - If it has not been placed by the AI → scale its value by draw probability.
+     *   - Otherwise (already placed by AI) → keep at face value.
      */
     protected ArrayList<CardsCollection> makePotentialPlacedCards(CardsCollection player_hand,
-            ArrayList<CardsCollection> player_placed_down, ArrayList<CardsCollection> opponent_placed_down,
+            ArrayList<CardsCollection> player_placed_down,
+            ArrayList<CardsCollection> opponent_placed_down,
             CardsCollection undealt) {
+
         ArrayList<CardsCollection> potential_placed_cards = new ArrayList<>();
         for (int i = 0; i < colors.length; i++) {
             potential_placed_cards.add(new CardsCollection());
@@ -195,16 +227,15 @@ public class Ai extends Player {
                             || c.getCardNumber() < getTopPlacedCard(colors[i]).getCardNumber()) {
                         j--;
                     } else if (!player_placed_down.get(i).contains(c)) {
-                        // anything other than player placed down or hand
                         double perc = (((double) undealt.size() + 8) / 2) / ((double) undealt.size());
                         c.setCardNumber(c.getCardNumber() * perc);
                         potential_placed_cards.get(i).addCard(c);
                     } else {
-                        // If player placed
                         potential_placed_cards.get(i).addCard(c);
                     }
                 } else {
-                    if (c.getCardNumber() == 0 || opponent_placed_down.get(i).contains(c) || player_hand.contains(c)
+                    if (c.getCardNumber() == 0 || opponent_placed_down.get(i).contains(c)
+                            || player_hand.contains(c)
                             || (!player_placed_down.get(i).isEmpty()
                                     && c.getCardNumber() < player_placed_down.get(i).getTopCard().getCardNumber())) {
                         j--;
@@ -228,49 +259,43 @@ public class Ai extends Player {
         return potential_placed_cards;
     }
 
-    /*
-     * 
-     */
-    protected ArrayList<ArrayList<Double>> getExpectedScores(ArrayList<CardsCollection> potential_placed_cards,
-            CardsCollection undealt) {
-        ArrayList<ArrayList<Double>> expected_scores = new ArrayList<>();
-        expected_scores.add(new ArrayList<>()); // 1 = expected scores for discarding
-        expected_scores.add(new ArrayList<>()); // 2 = expected scores for placing
+    protected ArrayList<ArrayList<Double>> getExpectedScores(
+            ArrayList<CardsCollection> potential_placed_cards, CardsCollection undealt) {
 
-        // for each card in the hand, calculate an expected score for placing it and
-        // discarding it and add it to the appropriate ArrayList
+        ArrayList<ArrayList<Double>> expected_scores = new ArrayList<>();
+        expected_scores.add(new ArrayList<>()); // index 0 — expected score if discarded
+        expected_scores.add(new ArrayList<>()); // index 1 — expected score if placed
+
         for (int i = 0; i < hand.size(); i++) {
             Card c = hand.getCardAt(i);
             Card c2 = new Card((int) c.getCardNumber(), c.getCardColor());
 
-            // discarding it
+            // Score for discarding card c.
             double total = 0;
             double perc = (((double) undealt.size() + 8) / 2) / ((double) undealt.size());
             c2.setCardNumber(c2.getCardNumber() * perc);
             potential_placed_cards.get(getColorIndex(c2.getCardColor())).addCard(c2);
             for (Color col : colors) {
-                double score = potential_placed_cards.get(getColorIndex((col))).getScore(20 * perc);
-                total += score;
+                total += potential_placed_cards.get(getColorIndex(col)).getScore(20 * perc);
             }
             potential_placed_cards.get(getColorIndex(c.getCardColor())).removeCard(c2);
-            // display expected score for discarding card
             expected_scores.get(0).add(total);
 
-            // placing it
+            // Score for placing card c (includes all same-color cards in hand with
+            // value >= c, since placing c allows placing those later).
             CardsCollection placeable_cards_in_hand = hand.getCardsbyColor(c.getCardColor());
             for (int j = 0; j < placeable_cards_in_hand.size(); j++) {
                 if (placeable_cards_in_hand.getCardAt(j).getCardNumber() < c.getCardNumber()) {
                     placeable_cards_in_hand.removeCard(placeable_cards_in_hand.getCardAt(j));
+                    j--;
                 }
             }
             potential_placed_cards.get(getColorIndex(c.getCardColor())).addCards(placeable_cards_in_hand);
             total = 0;
             for (Color col : colors) {
-                double score = potential_placed_cards.get(getColorIndex((col))).getScore(20 * perc);
-                total += score;
+                total += potential_placed_cards.get(getColorIndex(col)).getScore(20 * perc);
             }
             potential_placed_cards.get(getColorIndex(c.getCardColor())).removeCards(placeable_cards_in_hand);
-            // display expected score for placing cards
             expected_scores.get(1).add(total);
         }
         return expected_scores;

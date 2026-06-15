@@ -6,7 +6,7 @@ public class LostCities {
         System.setOut(new java.io.PrintStream(System.out, true));
 
         String p1Type = "human";
-        String p2Type = "ai";
+        String p2Type = "minimax";
         String seedOption = "random";
         if (args.length >= 2) {
             p1Type = args[0].toLowerCase();

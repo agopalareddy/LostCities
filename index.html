@@ -125,15 +125,96 @@
     <div class="app-container">
       <!-- Sub-header Toolbar Actions -->
       <div class="sub-header-actions">
+        <div class="mode-group" id="mode-selector">
+          <button id="btn-mode-ai" class="btn btn-primary mode-btn" data-mode="ai">
+            <i class="fa-solid fa-robot"></i> vs AI
+          </button>
+          <button id="btn-mode-human" class="btn btn-secondary mode-btn" data-mode="human">
+            <i class="fa-solid fa-user-group"></i> vs Human
+          </button>
+          <button id="btn-mode-aivsai" class="btn btn-secondary mode-btn" data-mode="ai-vs-ai">
+            <i class="fa-solid fa-brain"></i> AI vs AI
+          </button>
+        </div>
         <button id="btn-reset-game" class="btn btn-secondary">
-          <i class="fa-solid fa-rotate-left"></i> Reset Game
-        </button>
-        <button id="btn-switch-mode" class="btn btn-primary">
-          <i class="fa-solid fa-robot"></i> Mode: vs AI
+          <i class="fa-solid fa-rotate-left"></i> Reset
         </button>
         <button id="btn-switch-seed" class="btn btn-secondary">
           <i class="fa-solid fa-shuffle"></i> Shuffle: Random
         </button>
+      </div>
+
+      <!-- AI vs AI Configuration Panel -->
+      <div id="aivsai-panel" class="aivsai-panel" style="display: none">
+        <div class="aivsai-config">
+          <div class="ai-picker">
+            <label>Player 1 AI</label>
+            <div class="ai-type-group" id="p1-ai-type">
+              <button
+                class="btn btn-primary ai-type-btn active"
+                data-player="p1"
+                data-type="greedy"
+              >
+                <i class="fa-solid fa-bolt"></i> Greedy
+              </button>
+              <button class="btn btn-secondary ai-type-btn" data-player="p1" data-type="minimax">
+                <i class="fa-solid fa-sitemap"></i> Minimax
+              </button>
+              <button class="btn btn-secondary ai-type-btn" data-player="p1" data-type="alphabeta">
+                <i class="fa-solid fa-scissors"></i> Alpha-Beta
+              </button>
+            </div>
+          </div>
+          <div class="ai-vs-divider"><span>VS</span></div>
+          <div class="ai-picker">
+            <label>Player 2 AI</label>
+            <div class="ai-type-group" id="p2-ai-type">
+              <button class="btn btn-secondary ai-type-btn" data-player="p2" data-type="greedy">
+                <i class="fa-solid fa-bolt"></i> Greedy
+              </button>
+              <button class="btn btn-secondary ai-type-btn" data-player="p2" data-type="minimax">
+                <i class="fa-solid fa-sitemap"></i> Minimax
+              </button>
+              <button
+                class="btn btn-primary ai-type-btn active"
+                data-player="p2"
+                data-type="alphabeta"
+              >
+                <i class="fa-solid fa-scissors"></i> Alpha-Beta
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Step / Playback Controls -->
+        <div class="playback-controls" id="playback-controls">
+          <div class="playback-mode-toggle">
+            <button id="btn-playback-manual" class="btn btn-primary playback-mode-btn active">
+              <i class="fa-solid fa-forward-step"></i> Manual Step
+            </button>
+            <button id="btn-playback-auto" class="btn btn-secondary playback-mode-btn">
+              <i class="fa-solid fa-play"></i> Auto Play
+            </button>
+          </div>
+          <div class="step-controls" id="step-controls">
+            <button id="btn-next-step" class="btn btn-primary" disabled>
+              <i class="fa-solid fa-forward-step"></i> Next Turn
+            </button>
+            <span id="step-queue-badge" class="step-badge">0 buffered</span>
+          </div>
+          <div class="speed-controls" id="speed-controls" style="display: none">
+            <label for="speed-slider"><i class="fa-solid fa-gauge-high"></i> Speed</label>
+            <input
+              type="range"
+              id="speed-slider"
+              min="100"
+              max="2000"
+              value="800"
+              step="100"
+              style="width: 120px"
+            />
+            <span id="speed-label">0.8s/turn</span>
+          </div>
+        </div>
       </div>
 
       <main class="game-board-layout">
@@ -293,14 +374,28 @@
 
       let selectedHandCardIdx = null;
       let selectedAction = null; // 'p' (Place) or 'd' (Discard)
-      let activeMode = 'ai'; // 'ai' or 'human'
+      let activeMode = 'ai'; // 'ai', 'human', 'ai-vs-ai'
       let activeShuffle = 'random'; // 'random' or 'fixed'
+      let p1AiType = 'greedy'; // AI-vs-AI P1 type (default: Greedy)
+      let p2AiType = 'alphabeta'; // AI-vs-AI P2 type (default: Alpha-Beta)
       let p2HandVisible = false;
       let lastTurn = null;
       let justDiscardedColor = null;
 
+      // ── AI-vs-AI playback state ─────────────────────────────────────────────
+      let playbackMode = 'manual'; // 'manual' or 'auto'
+      let autoPlayInterval = null;
+      let autoPlaySpeed = 800; // ms between steps
+      let stepQueueSize = 0;
+      // ────────────────────────────────────────────────────────────────────────
+
       // Start lost cities engine
-      socket.emit('start-game', activeMode, activeShuffle);
+      socket.emit('start-game', {
+        mode: activeMode,
+        shuffle: activeShuffle,
+        p1Type: p1AiType,
+        p2Type: p2AiType,
+      });
 
       const colorsMap = {
         Y: 'Yellow',
@@ -335,14 +430,13 @@
       };
 
       const updateModeUI = () => {
-        const btn = document.getElementById('btn-switch-mode');
-        if (activeMode === 'human') {
-          btn.innerHTML = '<i class="fa-solid fa-user-group"></i> Mode: vs Human';
-          btn.className = 'btn btn-secondary';
-        } else {
-          btn.innerHTML = '<i class="fa-solid fa-robot"></i> Mode: vs AI';
-          btn.className = 'btn btn-primary';
-        }
+        document.querySelectorAll('.mode-btn').forEach((btn) => {
+          const isActive = btn.dataset.mode === activeMode;
+          btn.className = isActive ? 'btn btn-primary mode-btn' : 'btn btn-secondary mode-btn';
+        });
+        // Show/hide AI vs AI config panel
+        const panel = document.getElementById('aivsai-panel');
+        panel.style.display = activeMode === 'ai-vs-ai' ? '' : 'none';
       };
 
       const updateShuffleUI = () => {
@@ -356,32 +450,135 @@
         }
       };
 
-      updateModeUI();
-      updateShuffleUI();
-
-      document.getElementById('btn-switch-mode').addEventListener('click', () => {
-        activeMode = activeMode === 'ai' ? 'human' : 'ai';
-        updateModeUI();
+      const startNewGame = () => {
         selectedHandCardIdx = null;
         lastTurn = null;
         clearVisualHighlights();
-        socket.emit('start-game', activeMode, activeShuffle);
+        stopAutoPlay();
+        stepQueueSize = 0;
+        updateStepUI();
+        socket.emit('start-game', {
+          mode: activeMode,
+          shuffle: activeShuffle,
+          p1Type: p1AiType,
+          p2Type: p2AiType,
+        });
+      };
+
+      updateModeUI();
+      updateShuffleUI();
+
+      // Mode buttons
+      document.querySelectorAll('.mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeMode = btn.dataset.mode;
+          updateModeUI();
+          startNewGame();
+        });
       });
 
       document.getElementById('btn-switch-seed').addEventListener('click', () => {
         activeShuffle = activeShuffle === 'random' ? 'fixed' : 'random';
         updateShuffleUI();
-        selectedHandCardIdx = null;
-        lastTurn = null;
-        clearVisualHighlights();
-        socket.emit('start-game', activeMode, activeShuffle);
+        startNewGame();
       });
 
-      document.getElementById('btn-reset-game').addEventListener('click', () => {
-        selectedHandCardIdx = null;
-        lastTurn = null;
-        clearVisualHighlights();
-        socket.emit('start-game', activeMode, activeShuffle);
+      document.getElementById('btn-reset-game').addEventListener('click', startNewGame);
+
+      // AI type buttons (AI-vs-AI config)
+      document.querySelectorAll('.ai-type-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const player = btn.dataset.player;
+          const type = btn.dataset.type;
+          if (player === 'p1') {
+            p1AiType = type;
+          } else {
+            p2AiType = type;
+          }
+          // Update active state within group
+          document.querySelectorAll(`.ai-type-btn[data-player="${player}"]`).forEach((b) => {
+            b.className =
+              b.dataset.type === type
+                ? 'btn btn-primary ai-type-btn active'
+                : 'btn btn-secondary ai-type-btn';
+          });
+        });
+      });
+
+      // Playback mode toggle
+      document.getElementById('btn-playback-manual').addEventListener('click', () => {
+        setPlaybackMode('manual');
+      });
+      document.getElementById('btn-playback-auto').addEventListener('click', () => {
+        setPlaybackMode('auto');
+      });
+
+      document.getElementById('btn-next-step').addEventListener('click', () => {
+        socket.emit('next-step');
+      });
+
+      const speedSlider = document.getElementById('speed-slider');
+      const speedLabel = document.getElementById('speed-label');
+      speedSlider.addEventListener('input', () => {
+        autoPlaySpeed = parseInt(speedSlider.value);
+        speedLabel.textContent = (autoPlaySpeed / 1000).toFixed(1) + 's/turn';
+        if (playbackMode === 'auto' && autoPlayInterval) {
+          clearInterval(autoPlayInterval);
+          startAutoPlay();
+        }
+      });
+
+      const stopAutoPlay = () => {
+        if (autoPlayInterval) {
+          clearInterval(autoPlayInterval);
+          autoPlayInterval = null;
+        }
+      };
+
+      const startAutoPlay = () => {
+        stopAutoPlay();
+        autoPlayInterval = setInterval(() => {
+          if (activeMode === 'ai-vs-ai' && !gameState.isGameOver) {
+            socket.emit('next-step');
+          }
+        }, autoPlaySpeed);
+      };
+
+      const setPlaybackMode = (mode) => {
+        playbackMode = mode;
+        const manualBtn = document.getElementById('btn-playback-manual');
+        const autoBtn = document.getElementById('btn-playback-auto');
+        const stepControls = document.getElementById('step-controls');
+        const speedControls = document.getElementById('speed-controls');
+
+        if (mode === 'manual') {
+          manualBtn.className = 'btn btn-primary playback-mode-btn active';
+          autoBtn.className = 'btn btn-secondary playback-mode-btn';
+          stepControls.style.display = '';
+          speedControls.style.display = 'none';
+          stopAutoPlay();
+          socket.emit('set-auto-play', false);
+        } else {
+          manualBtn.className = 'btn btn-secondary playback-mode-btn';
+          autoBtn.className = 'btn btn-primary playback-mode-btn active';
+          stepControls.style.display = 'none';
+          speedControls.style.display = '';
+          socket.emit('set-auto-play', true);
+          startAutoPlay();
+        }
+      };
+
+      const updateStepUI = () => {
+        const badge = document.getElementById('step-queue-badge');
+        const nextBtn = document.getElementById('btn-next-step');
+        if (badge) badge.textContent = `${stepQueueSize} buffered`;
+        if (nextBtn) nextBtn.disabled = stepQueueSize === 0 && !gameState.isGameOver;
+      };
+
+      // Receive queue size updates from server
+      socket.on('step-queue-size', (size) => {
+        stepQueueSize = size;
+        updateStepUI();
       });
 
       document.getElementById('btn-toggle-p2-hand').addEventListener('click', () => {
@@ -590,8 +787,9 @@
 
       // ─── Turn indicator: collapses opponent expedition row while AI is acting ───
       const updateTurnState = (state) => {
+        const isAiOnlyMode = state.gameMode === 'ai-vs-ai';
         const isAiTurn = state.gameMode === 'ai' && !state.isGameOver && !state.prompt;
-        document.body.dataset.turn = isAiTurn ? 'ai' : 'player';
+        document.body.dataset.turn = isAiTurn || isAiOnlyMode ? 'ai' : 'player';
       };
 
       // ─── Pass Screen Dialog handling ───
@@ -622,7 +820,19 @@
           heading.textContent = 'Match Complete';
 
           let winnerAnnouncement = state.winnerText || '';
-          if (state.gameMode === 'ai') {
+          if (state.gameMode === 'ai-vs-ai') {
+            const p1Label = state.p1Type
+              ? state.p1Type.charAt(0).toUpperCase() + state.p1Type.slice(1)
+              : 'Player 1 AI';
+            const p2Label = state.p2Type
+              ? state.p2Type.charAt(0).toUpperCase() + state.p2Type.slice(1)
+              : 'Player 2 AI';
+            if (winnerAnnouncement.includes('Player 1 won')) {
+              winnerAnnouncement = `🏆 ${p1Label} wins the AI Showdown!`;
+            } else if (winnerAnnouncement.includes('Player 2 won')) {
+              winnerAnnouncement = `🤖 ${p2Label} wins the AI Showdown!`;
+            }
+          } else if (state.gameMode === 'ai') {
             if (winnerAnnouncement.includes('Player 1 won')) {
               winnerAnnouncement = '🏆 Congratulations! You defeated the AI!';
             } else if (winnerAnnouncement.includes('Player 2 won')) {
@@ -641,6 +851,15 @@
           if (state.gameMode === 'ai') {
             if (lblP1) lblP1.textContent = 'Your Score';
             if (lblP2) lblP2.textContent = 'AI Score';
+          } else if (state.gameMode === 'ai-vs-ai') {
+            const p1Label = state.p1Type
+              ? state.p1Type.charAt(0).toUpperCase() + state.p1Type.slice(1)
+              : 'P1 AI';
+            const p2Label = state.p2Type
+              ? state.p2Type.charAt(0).toUpperCase() + state.p2Type.slice(1)
+              : 'P2 AI';
+            if (lblP1) lblP1.textContent = `${p1Label} (P1) Score`;
+            if (lblP2) lblP2.textContent = `${p2Label} (P2) Score`;
           } else {
             if (lblP1) lblP1.textContent = 'Player 1 Score';
             if (lblP2) lblP2.textContent = 'Player 2 Score';
@@ -659,9 +878,35 @@
         }
 
         if (!state.prompt) {
-          const opponentName = state.gameMode === 'ai' ? 'AI' : 'Player 2';
-          heading.textContent = `${opponentName} Thinking`;
-          instruction.textContent = `${opponentName} is executing its turn in the JVM...`;
+          if (state.gameMode === 'ai-vs-ai') {
+            const p1Label = state.p1Type
+              ? state.p1Type.charAt(0).toUpperCase() + state.p1Type.slice(1)
+              : 'P1';
+            const p2Label = state.p2Type
+              ? state.p2Type.charAt(0).toUpperCase() + state.p2Type.slice(1)
+              : 'P2';
+            heading.textContent = `Player ${state.currentTurn} Thinking`;
+            instruction.textContent =
+              state.currentTurn === 1
+                ? `${p1Label} AI is calculating its best move...`
+                : `${p2Label} AI is calculating its best move...`;
+          } else {
+            const opponentName = state.gameMode === 'ai' ? 'AI' : 'Player 2';
+            heading.textContent = `${opponentName} Thinking`;
+            instruction.textContent = `${opponentName} is executing its turn in the JVM...`;
+          }
+          return;
+        }
+
+        if (state.gameMode === 'ai-vs-ai') {
+          heading.textContent = `Spectating — Turn ${state.currentTurn === 1 ? '1' : '2'}`;
+          const p1Label = state.p1Type
+            ? state.p1Type.charAt(0).toUpperCase() + state.p1Type.slice(1)
+            : 'P1';
+          const p2Label = state.p2Type
+            ? state.p2Type.charAt(0).toUpperCase() + state.p2Type.slice(1)
+            : 'P2';
+          instruction.textContent = `${state.currentTurn === 1 ? p1Label + ' (P1)' : p2Label + ' (P2)'} just played. Use the step controls above.`;
           return;
         }
 
@@ -888,7 +1133,21 @@
         });
 
         // Set Dynamic Titles
-        if (data.gameMode === 'human') {
+        if (data.gameMode === 'ai-vs-ai') {
+          const p1Label = data.p1Type
+            ? data.p1Type.charAt(0).toUpperCase() + data.p1Type.slice(1)
+            : 'Minimax';
+          const p2Label = data.p2Type
+            ? data.p2Type.charAt(0).toUpperCase() + data.p2Type.slice(1)
+            : 'AlphaBeta';
+          document.getElementById('player-placed-title').textContent =
+            `${p1Label} AI (Player 1) Expeditions`;
+          document.getElementById('opponent-placed-title').textContent =
+            `${p2Label} AI (Player 2) Expeditions`;
+          document.getElementById('player-hand-title').textContent =
+            `${p1Label} AI Hand (Player 1)`;
+          document.getElementById('p2-hand-title').textContent = `${p2Label} AI Hand (Player 2)`;
+        } else if (data.gameMode === 'human') {
           document.getElementById('player-placed-title').textContent =
             `Your Placed Expeditions (Player ${activePlayerNum})`;
           document.getElementById('opponent-placed-title').textContent =
@@ -907,17 +1166,25 @@
         const playerHandGrid = document.getElementById('player-hand');
         const player2HandGrid = document.getElementById('player2-hand');
 
-        // Grey out hands depending on who's turn it is
-        if (gameState.prompt === 'PICK_CARD' || gameState.prompt === 'DISCARD_OR_PLACE') {
+        // AI-vs-AI: both hands are always shown face-up (spectator mode)
+        if (data.gameMode === 'ai-vs-ai') {
           playerHandGrid.classList.remove('inactive-hand');
-          player2HandGrid.classList.add('inactive-hand');
+          player2HandGrid.classList.remove('inactive-hand');
+          renderHand(playerHandGrid, data.player1Hand, false, false);
+          renderHand(player2HandGrid, data.player2Hand, false, true);
         } else {
-          playerHandGrid.classList.add('inactive-hand');
-          player2HandGrid.classList.add('inactive-hand');
-        }
+          // Grey out hands depending on who's turn it is
+          if (gameState.prompt === 'PICK_CARD' || gameState.prompt === 'DISCARD_OR_PLACE') {
+            playerHandGrid.classList.remove('inactive-hand');
+            player2HandGrid.classList.add('inactive-hand');
+          } else {
+            playerHandGrid.classList.add('inactive-hand');
+            player2HandGrid.classList.add('inactive-hand');
+          }
 
-        renderHand(playerHandGrid, activeHand, false, false);
-        renderHand(player2HandGrid, inactiveHand, !p2HandVisible, true);
+          renderHand(playerHandGrid, activeHand, false, false);
+          renderHand(player2HandGrid, inactiveHand, !p2HandVisible, true);
+        }
 
         renderActionPanel(data);
         updateTurnState(gameState);
@@ -927,7 +1194,13 @@
         const modal = document.getElementById('game-over-modal');
         if (modal.open) modal.close();
         lastTurn = null;
-        socket.emit('start-game', activeMode, activeShuffle);
+        stopAutoPlay();
+        socket.emit('start-game', {
+          mode: activeMode,
+          shuffle: activeShuffle,
+          p1Type: p1AiType,
+          p2Type: p2AiType,
+        });
       });
 
       // ── Spotlight cursor glow tracking ──

@@ -30,20 +30,29 @@ public class GameManager {
     }
 
     public GameManager(String s1, String s2, String seedOption) {
-        if ("human".equals(s1)) {
-            p1 = new Human("");
-        } else {
-            p1 = new Ai();
-        }
-
-        if ("human".equals(s2)) {
-            p2 = new Human("");
-        } else {
-            p2 = new Ai();
-        }
+        p1 = createPlayer(s1);
+        p2 = createPlayer(s2);
         undealt = new CardsCollection('U', seedOption);
         discards = new DiscardPiles();
     }
+
+    private static Player createPlayer(String type) {
+        switch (type.toLowerCase()) {
+            case "alphabeta":
+            case "alpha-beta":
+            case "ab":
+                return new AlphaBetaAi();
+            case "minimax":
+                return new MinimaxAi();
+            case "greedy":
+            case "ai":
+                return new Ai();
+            case "human":
+            default:
+                return new Human("");
+        }
+    }
+
 
     /* AUXILIARY FUNCTIONS */
 
@@ -69,11 +78,15 @@ public class GameManager {
      * Once undealt pile is empty, calculate score
      */
     public void playGame() {
+        boolean aiVsAi = !(p1 instanceof Human) && !(p2 instanceof Human);
         while (!undealt.isEmpty()) {
             // Player 1's Turn
             playPlayer(p1);
-            if (!undealt.isEmpty())
+            if (aiVsAi) System.out.println("[TURN_DONE]");
+            if (!undealt.isEmpty()) {
                 playPlayer(p2);
+                if (aiVsAi) System.out.println("[TURN_DONE]");
+            }
         }
 
         // Calculate scores

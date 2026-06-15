@@ -327,6 +327,7 @@
       let activeShuffle = 'random'; // 'random' or 'fixed'
       let p2HandVisible = false;
       let lastTurn = null;
+      let justDiscardedColor = null;
 
       // Start lost cities engine
       socket.emit('start-game', activeMode, activeShuffle);
@@ -337,6 +338,30 @@
         W: 'White',
         G: 'Green',
         R: 'Red',
+      };
+
+      const isPlacementLegal = (card, activePlaced) => {
+        const colorName = colorsMap[card.color];
+        if (!colorName) return false;
+        const placedList = activePlaced[colorName] || [];
+        if (placedList.length === 0) return true;
+        const topCard = placedList[placedList.length - 1];
+        return card.val >= topCard.val;
+      };
+
+      const performPlace = () => {
+        justDiscardedColor = null;
+        socket.emit('input', 'p');
+      };
+
+      const performDiscard = () => {
+        if (selectedHandCardIdx !== null) {
+          const activeHand =
+            gameState.currentTurn === 1 ? gameState.player1Hand : gameState.player2Hand;
+          const card = activeHand[selectedHandCardIdx];
+          justDiscardedColor = colorsMap[card.color];
+        }
+        socket.emit('input', 'd');
       };
 
       const updateModeUI = () => {
@@ -426,11 +451,16 @@
         const colorName = colorsMap[card.color];
         if (!colorName) return;
 
-        const placePile = document.querySelector(
-          `#player-placed .col-pile.${colorName.toLowerCase()}`
-        );
-        if (placePile) {
-          placePile.classList.add('highlight-place');
+        const activePlayerNum = gameState.gameMode === 'human' ? gameState.currentTurn : 1;
+        const activePlaced = activePlayerNum === 1 ? gameState.p1Placed : gameState.p2Placed;
+
+        if (isPlacementLegal(card, activePlaced)) {
+          const placePile = document.querySelector(
+            `#player-placed .col-pile.${colorName.toLowerCase()}`
+          );
+          if (placePile) {
+            placePile.classList.add('highlight-place');
+          }
         }
 
         const discardPile = document.querySelector(
@@ -456,6 +486,9 @@
 
         const colors = ['Yellow', 'Blue', 'White', 'Green', 'Red'];
         colors.forEach((col) => {
+          if (justDiscardedColor && col.toLowerCase() === justDiscardedColor.toLowerCase()) {
+            return;
+          }
           if (state.discards[col] && state.discards[col].length > 0) {
             const discardPile = document.querySelector(
               `#discard-piles .col-pile.${col.toLowerCase()}`
@@ -507,9 +540,13 @@
 
           cardEl.addEventListener('dblclick', () => {
             if (gameState.prompt === 'DISCARD_OR_PLACE') {
-              selectedHandCardIdx = index;
-              socket.emit('input', 'p');
-              clearVisualHighlights();
+              const activePlayerNum = gameState.gameMode === 'human' ? gameState.currentTurn : 1;
+              const activePlaced = activePlayerNum === 1 ? gameState.p1Placed : gameState.p2Placed;
+              if (isPlacementLegal(card, activePlaced)) {
+                selectedHandCardIdx = index;
+                performPlace();
+                clearVisualHighlights();
+              }
             }
           });
         }
@@ -713,20 +750,29 @@
             const card = activeHand[selectedHandCardIdx];
             const cardName = `${colorsMap[card.color]} ${card.val === 0 ? 'Multi' : card.val}`;
             heading.textContent = 'Select Target';
-            instruction.innerHTML = `You selected <strong>${cardName}</strong>.<br><br>👉 Click the green-glowing slot on the board to <strong>Place</strong> it, or the orange-glowing slot to <strong>Discard</strong> it.`;
+
+            const activePlayerNum = state.gameMode === 'human' ? state.currentTurn : 1;
+            const activePlaced = activePlayerNum === 1 ? state.p1Placed : state.p2Placed;
+            const canPlace = isPlacementLegal(card, activePlaced);
+
+            if (canPlace) {
+              instruction.innerHTML = `You selected <strong>${cardName}</strong>.<br><br>👉 Click the green-glowing slot on the board to <strong>Place</strong> it, or the orange-glowing slot to <strong>Discard</strong> it.`;
+            } else {
+              instruction.innerHTML = `You selected <strong>${cardName}</strong>.<br><br>⚠️ Placing is illegal (value is less than current expedition).<br>👉 Click the orange-glowing slot to <strong>Discard</strong> it.`;
+            }
 
             const btnPlace = document.createElement('button');
             btnPlace.className = 'btn btn-primary';
             btnPlace.textContent = 'Place Card';
             btnPlace.addEventListener('click', () => {
-              socket.emit('input', 'p');
+              performPlace();
             });
 
             const btnDiscard = document.createElement('button');
             btnDiscard.className = 'btn btn-secondary';
             btnDiscard.textContent = 'Discard Card';
             btnDiscard.addEventListener('click', () => {
-              socket.emit('input', 'd');
+              performDiscard();
             });
 
             const btnCancel = document.createElement('button');
@@ -738,7 +784,9 @@
               renderActionPanel(state);
             });
 
-            buttonsContainer.appendChild(btnPlace);
+            if (canPlace) {
+              buttonsContainer.appendChild(btnPlace);
+            }
             buttonsContainer.appendChild(btnDiscard);
             buttonsContainer.appendChild(btnCancel);
           }
@@ -759,7 +807,10 @@
           buttonsContainer.appendChild(btnDraw);
 
           const availableDiscards = ['Yellow', 'Blue', 'White', 'Green', 'Red'].filter(
-            (col) => state.discards[col] && state.discards[col].length > 0
+            (col) =>
+              state.discards[col] &&
+              state.discards[col].length > 0 &&
+              (!justDiscardedColor || col.toLowerCase() !== justDiscardedColor.toLowerCase())
           );
 
           if (availableDiscards.length > 0) {
@@ -826,6 +877,10 @@
           const tempIndex = selectedHandCardIdx;
           selectedHandCardIdx = null;
           socket.emit('input', tempIndex.toString());
+        }
+
+        if (data.prompt === 'DISCARD_OR_PLACE') {
+          justDiscardedColor = null;
         }
 
         if (data.prompt && data.prompt !== 'PICK_CARD' && data.prompt !== 'DISCARD_OR_PLACE') {
@@ -960,7 +1015,7 @@
         // 1. Click on place highlight zone
         const placePile = e.target.closest('.col-pile.highlight-place');
         if (placePile && selectedHandCardIdx !== null) {
-          socket.emit('input', 'p');
+          performPlace();
           clearVisualHighlights();
           return;
         }
@@ -968,7 +1023,7 @@
         // 2. Click on discard highlight zone
         const discardPile = e.target.closest('.col-pile.highlight-discard');
         if (discardPile && selectedHandCardIdx !== null) {
-          socket.emit('input', 'd');
+          performDiscard();
           clearVisualHighlights();
           return;
         }
